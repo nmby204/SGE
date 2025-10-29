@@ -32,7 +32,7 @@ router.use(auth);
  *           schema:
  *             type: object
  *             required:
- *               - courseId
+ *               - courseName
  *               - partial
  *               - cycle
  *               - content
@@ -40,9 +40,9 @@ router.use(auth);
  *               - methodology
  *               - evaluation
  *             properties:
- *               courseId:
+ *               courseName:
  *                 type: string
- *                 format: uuid
+ *                 description: Nombre de la materia
  *               partial:
  *                 type: integer
  *                 minimum: 1
@@ -79,7 +79,7 @@ router.use(auth);
 router.post('/', [
   authorize('professor'),
   upload.single('file'),
-  body('courseId', 'Course ID is required').not().isEmpty(),
+  body('courseName', 'Course name is required').not().isEmpty(),
   body('partial', 'Partial is required and must be 1-3').isInt({ min: 1, max: 3 }),
   body('cycle', 'Cycle is required').not().isEmpty(),
   body('content', 'Content is required').not().isEmpty(),
@@ -98,11 +98,10 @@ router.post('/', [
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: courseId
+ *         name: courseName
  *         schema:
  *           type: string
- *           format: uuid
- *         description: Filtrar por ID de materia
+ *         description: Filtrar por nombre de materia
  *       - in: query
  *         name: partial
  *         schema:
@@ -169,7 +168,7 @@ router.get('/:id', getPlanningById);
 
 /**
  * @swagger
- * /planning/history/{courseId}:
+ * /planning/history/{courseName}:
  *   get:
  *     summary: Obtener historial de planeaciones de una materia
  *     tags: [Planeación Didáctica]
@@ -177,12 +176,11 @@ router.get('/:id', getPlanningById);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: courseId
+ *         name: courseName
  *         required: true
  *         schema:
  *           type: string
- *           format: uuid
- *         description: ID de la materia
+ *         description: Nombre de la materia
  *       - in: query
  *         name: cycle
  *         schema:
@@ -200,7 +198,7 @@ router.get('/:id', getPlanningById);
  *       500:
  *         description: Error del servidor
  */
-router.get('/history/:courseId', getPlanningHistory);
+router.get('/history/:courseName', getPlanningHistory);
 
 /**
  * @swagger
@@ -225,6 +223,9 @@ router.get('/history/:courseId', getPlanningHistory);
  *           schema:
  *             type: object
  *             properties:
+ *               courseName:
+ *                 type: string
+ *                 description: Nombre de la materia
  *               partial:
  *                 type: integer
  *                 minimum: 1
@@ -260,6 +261,7 @@ router.get('/history/:courseId', getPlanningHistory);
  */
 router.put('/:id', [
   upload.single('file'),
+  body('courseName', 'Course name is required').optional().not().isEmpty(),
   body('partial', 'Partial must be 1-3').optional().isInt({ min: 1, max: 3 })
 ], updatePlanning);
 
