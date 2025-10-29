@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { auth, authorize } = require('../middleware/auth');
+const { auth, authorize } = require('../middlewares/auth');
 const {
   getUsers,
   getProfessors,
