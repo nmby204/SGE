@@ -31,10 +31,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     feedback: {
       type: DataTypes.TEXT
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'is_active'
     }
   }, {
     tableName: 'evidences',
-    timestamps: true
+    timestamps: true,
+    underscored: true
   });
 
   Evidence.associate = function(models) {
