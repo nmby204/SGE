@@ -50,6 +50,23 @@ module.exports = (sequelize, DataTypes) => {
     fileUrl: {
       type: DataTypes.STRING
     },
+    // ✅ NUEVOS CAMPOS PARA GOOGLE DRIVE
+    driveFileId: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    fileName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    fileSize: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    storageType: {
+      type: DataTypes.ENUM('local', 'google_drive'),
+      defaultValue: 'local'
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -63,8 +80,6 @@ module.exports = (sequelize, DataTypes) => {
 
   DidacticPlanning.associate = function(models) {
     DidacticPlanning.belongsTo(models.User, { foreignKey: 'professorId', as: 'professor' });
-    // Eliminamos la relación con Course ya que usamos courseName directamente
-    // DidacticPlanning.belongsTo(models.Course, { foreignKey: 'courseId', as: 'course' });
     DidacticPlanning.hasMany(models.PartialProgress, { foreignKey: 'planningId', as: 'progress' });
   };
 

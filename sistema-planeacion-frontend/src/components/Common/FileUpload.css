@@ -1,0 +1,148 @@
+.file-upload-container {
+  width: 100%;
+}
+
+.file-upload-area {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  margin-bottom: 1rem;
+}
+
+.file-upload-area:hover {
+  border-color: #4285f4;
+  background: #f8f9ff;
+}
+
+.file-upload-area.drag-active {
+  border-color: #4285f4;
+  background: #e8f0fe;
+  transform: scale(1.02);
+}
+
+.file-upload-area.has-file {
+  border-style: solid;
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-title {
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.upload-subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.upload-types {
+  margin: 0;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+}
+
+.file-details {
+  text-align: left;
+}
+
+.file-name {
+  margin: 0;
+  font-weight: 500;
+  color: #333;
+  word-break: break-all;
+}
+
+.file-size {
+  margin: 0;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.remove-file-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.remove-file-btn:hover {
+  background: #c82333;
+}
+
+.browse-file-btn {
+  background: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.browse-file-btn:hover {
+  background: #3367d6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .file-upload-area {
+    padding: 1.5rem;
+  }
+  
+  .file-preview {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .file-info {
+    flex-direction: column;
+    text-align: center;
+  }
+}
