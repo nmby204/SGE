@@ -7,10 +7,31 @@ const options = {
     info: {
       title: 'Sistema de Planeación Didáctica - API',
       version: '1.0.0',
-      description: 'API para el sistema de gestión de planeación didáctica con roles de administrador, coordinador y profesor',
+      description: `
+# Sistema de Gestión de Planeación Didáctica
+
+## Descripción
+API para el sistema de gestión de planeación didáctica con tres tipos de usuarios:
+- **Administrador**: Gestión completa de usuarios y sistema
+- **Coordinador**: Revisión y aprobación de planeaciones y evidencias
+- **Profesor**: Registro de planeaciones, avances y evidencias
+
+## Autenticación
+Todos los endpoints (excepto login) requieren autenticación JWT.
+Incluye el token en el header: \`Authorization: Bearer <token>\`
+
+## Roles y Permisos
+- **Solo Admin**: Registrar usuarios, eliminar usuarios
+- **Admin/Coordinador**: Ver todos los usuarios, revisar planeaciones, revisar evidencias, generar reportes
+- **Solo Profesor**: Crear sus planeaciones, registrar sus avances, subir sus evidencias
+      `,
       contact: {
         name: 'Soporte API',
         email: 'soporte@escuela.com'
+      },
+      license: {
+        name: 'MIT',
+        url: 'https://spdx.org/licenses/MIT.html'
       },
     },
     servers: [
@@ -25,25 +46,18 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'Ingrese el token JWT en el formato: Bearer <token>'
         },
       },
-      schemas: {
-        Error: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Mensaje de error'
-            }
-          }
-        }
-      }
     },
     security: [{
       bearerAuth: []
     }],
   },
-  apis: ['./docs/paths/*.js', './docs/schemas/*.js'], // archivos que contienen la documentación
+  apis: [
+    './src/docs/schemas/*.js', // Esquemas primero
+    './src/routes/*.js'        // Rutas después
+  ],
 };
 
 const specs = swaggerJsdoc(options);
