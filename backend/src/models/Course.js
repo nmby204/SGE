@@ -20,10 +20,16 @@ module.exports = (sequelize, DataTypes) => {
     credits: {
       type: DataTypes.INTEGER,
       defaultValue: 0
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'is_active'
     }
   }, {
     tableName: 'courses',
-    timestamps: true
+    timestamps: true,
+    underscored: true
   });
 
   Course.associate = function(models) {

@@ -34,17 +34,54 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Importar y usar rutas
+// DEBUG: Verificar estructura de archivos
+console.log('🔍 Verificando estructura de rutas...');
+const fs = require('fs');
+const routesPath = './src/routes';
+
 try {
-  app.use('/api/auth', require('./src/routes/auth'));
-  app.use('/api/users', require('./src/routes/users'));
-  app.use('/api/planning', require('./src/routes/planning'));
-  app.use('/api/progress', require('./src/routes/progress'));
-  app.use('/api/evidence', require('./src/routes/evidence'));
-  app.use('/api/reports', require('./src/routes/reports'));
-  console.log('✅ Rutas cargadas correctamente');
+  const files = fs.readdirSync(routesPath);
+  console.log('📁 Archivos en routes:', files);
 } catch (error) {
-  console.error('❌ Error cargando rutas:', error);
+  console.error('❌ No se puede leer la carpeta routes:', error.message);
+}
+
+// Importar y usar rutas a través de index.routes
+try {
+  console.log('🔄 Intentando cargar index.routes...');
+  const routes = require('./src/routes/index.routes');
+  console.log('✅ index.routes cargado exitosamente');
+  
+  app.use('/api', routes);
+  console.log('✅ Rutas montadas en /api');
+  
+  // DEBUG: Verificar las rutas cargadas
+  console.log('🔄 Verificando rutas disponibles...');
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      console.log(`📍 Ruta directa: ${middleware.route.path} - ${Object.keys(middleware.route.methods)}`);
+    } else if (middleware.name === 'router') {
+      console.log(`📍 Router montado en: ${middleware.regexp}`);
+    }
+  });
+  
+} catch (error) {
+  console.error('❌ Error cargando index.routes:', error);
+  console.error('📋 Detalle completo:', error.stack);
+  
+  // Intentar cargar rutas individualmente como fallback
+  console.log('🔄 Intentando cargar rutas individualmente...');
+  try {
+    app.use('/api/auth', require('./src/routes/auth'));
+    app.use('/api/users', require('./src/routes/users'));
+    app.use('/api/planning', require('./src/routes/planning'));
+    app.use('/api/progress', require('./src/routes/progress'));
+    app.use('/api/evidence', require('./src/routes/evidence'));
+    app.use('/api/reports', require('./src/routes/reports'));
+    console.log('✅ Rutas individuales cargadas');
+  } catch (individualError) {
+    console.error('❌ Error cargando rutas individuales:', individualError);
+  }
 }
 
 // Root endpoint
@@ -92,4 +129,3 @@ app.listen(PORT, () => {
   console.log(`🌐 URL principal: http://localhost:${PORT}/`);
 });
 
-module.exports = app;

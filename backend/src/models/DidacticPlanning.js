@@ -45,10 +45,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     fileUrl: {
       type: DataTypes.STRING
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'is_active'
     }
   }, {
     tableName: 'didactic_plannings',
-    timestamps: true
+    timestamps: true,
+    underscored: true
   });
 
   DidacticPlanning.associate = function(models) {

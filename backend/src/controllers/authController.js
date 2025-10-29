@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { validationResult } = require('express-validator');
@@ -18,8 +17,8 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check password usando el método del modelo
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -67,15 +66,11 @@ const register = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to create users' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
+    // Create user - la contraseña se hasheará automáticamente en el modelo
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password, // Se hashea automáticamente por el hook beforeCreate
       role
     });
 
@@ -116,15 +111,14 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    // Check current password
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    // Check current password usando el método del modelo
+    const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // Actualizar contraseña - se hasheará automáticamente por el hook beforeUpdate
+    user.password = newPassword;
     await user.save();
 
     res.json({ message: 'Password updated successfully' });

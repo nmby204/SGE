@@ -33,10 +33,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     adjustments: {
       type: DataTypes.TEXT
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'is_active'
     }
   }, {
     tableName: 'partial_progress',
-    timestamps: true
+    timestamps: true,
+    underscored: true
   });
 
   PartialProgress.associate = function(models) {
