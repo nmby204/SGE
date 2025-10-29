@@ -1,23 +1,23 @@
 const { Sequelize } = require('sequelize');
-const dbCfg = require('../config/db.js')[process.env.NODE_ENV || 'development'];
-const fs = require('fs');
-const path = require('path');
+const sequelize = require('../config/database');
 
-const sequelize = dbCfg.use_env_variable
-  ? new Sequelize(process.env[dbCfg.use_env_variable], dbCfg)
-  : new Sequelize(dbCfg.database, dbCfg.username, dbCfg.password, dbCfg);
+const db = {};
 
-const db = { sequelize, Sequelize };
+db.Sequelize = Sequelize;
+db.sequelize = sequelize;
 
-// Carga automática de modelos en src/models
-fs.readdirSync(__dirname)
-  .filter(f => f.endsWith('.model.js'))
-  .forEach(f => {
-    const model = require(path.join(__dirname, f))(sequelize);
-    db[model.name] = model;
-  });
+// Import models
+db.User = require('./User')(sequelize, Sequelize);
+db.Course = require('./Course')(sequelize, Sequelize);
+db.DidacticPlanning = require('./DidacticPlanning')(sequelize, Sequelize);
+db.PartialProgress = require('./PartialProgress')(sequelize, Sequelize);
+db.Evidence = require('./Evidence')(sequelize, Sequelize);
 
-// Associations (si las hubiera)
-// Object.values(db).filter(m => m.associate).forEach(m => m.associate(db));
+// Define associations
+Object.keys(db).forEach(modelName => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
+});
 
 module.exports = db;
