@@ -15,11 +15,35 @@ const createPlanning = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // ✅ DETERMINAR TIPO DE ALMACENAMIENTO
+    let fileData = {};
+    const isGoogleDrive = req.body.driveFileId && req.body.fileUrl;
+
+    if (isGoogleDrive) {
+      // ✅ GOOGLE DRIVE
+      console.log('☁️ Usando Google Drive para almacenamiento');
+      fileData = {
+        fileUrl: req.body.fileUrl,
+        driveFileId: req.body.driveFileId,
+        fileName: req.body.fileName || 'archivo',
+        storageType: 'google_drive'
+      };
+    } else if (req.file) {
+      // ✅ ALMACENAMIENTO LOCAL
+      console.log('📂 Usando almacenamiento local');
+      fileData = {
+        fileUrl: req.file.path,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        storageType: 'local'
+      };
+    }
+
     // Preparar datos para la planeación
     const planningData = {
       ...req.body,
       professorId: req.user.id,
-      fileUrl: req.file ? req.file.path : null
+      ...fileData
     };
 
     // Asegurarnos de que no haya courseId
@@ -197,10 +221,34 @@ const updatePlanning = async (req, res) => {
       return res.status(403).json({ message: 'No autorizado para actualizar esta planeación' });
     }
 
-    const updateData = { ...req.body };
-    if (req.file) {
-      updateData.fileUrl = req.file.path;
+    // ✅ DETERMINAR TIPO DE ALMACENAMIENTO
+    let fileData = {};
+    const isGoogleDrive = req.body.driveFileId && req.body.fileUrl;
+
+    if (isGoogleDrive) {
+      // ✅ GOOGLE DRIVE
+      console.log('☁️ Actualizando con Google Drive');
+      fileData = {
+        fileUrl: req.body.fileUrl,
+        driveFileId: req.body.driveFileId,
+        fileName: req.body.fileName || planning.fileName,
+        storageType: 'google_drive'
+      };
+    } else if (req.file) {
+      // ✅ ALMACENAMIENTO LOCAL
+      console.log('📂 Actualizando con archivo local');
+      fileData = {
+        fileUrl: req.file.path,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        storageType: 'local'
+      };
     }
+
+    const updateData = { 
+      ...req.body,
+      ...fileData
+    };
 
     // Asegurarnos de que no haya courseId
     delete updateData.courseId;

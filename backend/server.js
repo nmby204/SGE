@@ -30,7 +30,12 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     message: 'Sistema de Planeación Didáctica API is running!',
     timestamp: new Date().toISOString(),
-    docs: '/api-docs'
+    docs: '/api-docs',
+    features: {
+      googleDrive: process.env.GOOGLE_DRIVE_CLIENT_ID ? '✅ Configurado' : '❌ No configurado',
+      googleMaps: process.env.GOOGLE_MAPS_API_KEY ? '✅ Configurado' : '❌ No configurado',
+      googleCalendar: process.env.GOOGLE_CALENDAR_CLIENT_ID ? '✅ Configurado' : '❌ No configurado'
+    }
   });
 });
 
@@ -55,21 +60,11 @@ try {
   app.use('/api', routes);
   console.log('✅ Rutas montadas en /api');
   
-  // DEBUG: Verificar las rutas cargadas
-  console.log('🔄 Verificando rutas disponibles...');
-  app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      console.log(`📍 Ruta directa: ${middleware.route.path} - ${Object.keys(middleware.route.methods)}`);
-    } else if (middleware.name === 'router') {
-      console.log(`📍 Router montado en: ${middleware.regexp}`);
-    }
-  });
-  
 } catch (error) {
   console.error('❌ Error cargando index.routes:', error);
   console.error('📋 Detalle completo:', error.stack);
   
-  // Intentar cargar rutas individualmente como fallback
+  // ✅ NUEVO: Cargar rutas incluyendo Google Drive
   console.log('🔄 Intentando cargar rutas individualmente...');
   try {
     app.use('/api/auth', require('./src/routes/auth'));
@@ -78,6 +73,15 @@ try {
     app.use('/api/progress', require('./src/routes/progress'));
     app.use('/api/evidence', require('./src/routes/evidence'));
     app.use('/api/reports', require('./src/routes/reports'));
+    
+    // ✅ NUEVO: Ruta para Google Drive API
+    try {
+      app.use('/api/drive', require('./src/routes/drive'));
+      console.log('✅ Google Drive API montada en /api/drive');
+    } catch (driveError) {
+      console.log('⚠️  Google Drive API no configurada aún:', driveError.message);
+    }
+    
     console.log('✅ Rutas individuales cargadas');
   } catch (individualError) {
     console.error('❌ Error cargando rutas individuales:', individualError);
@@ -94,7 +98,13 @@ app.get('/', (req, res) => {
       health: '/api/health',
       auth: '/api/auth',
       users: '/api/users',
-      planning: '/api/planning'
+      planning: '/api/planning',
+      drive: '/api/drive' // ✅ NUEVO
+    },
+    apis: {
+      googleDrive: '/api/drive/upload', // ✅ NUEVO
+      googleMaps: 'Próximamente',
+      googleCalendar: 'Próximamente'
     }
   });
 });
@@ -115,7 +125,8 @@ app.use('*', (req, res) => {
     availableEndpoints: {
       root: '/',
       docs: '/api-docs',
-      health: '/api/health'
+      health: '/api/health',
+      drive: '/api/drive/upload' // ✅ NUEVO
     }
   });
 });
@@ -127,5 +138,11 @@ app.listen(PORT, () => {
   console.log(`📚 Swagger Docs: http://localhost:${PORT}/api-docs`);
   console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 URL principal: http://localhost:${PORT}/`);
+  console.log(`☁️  Google Drive API: http://localhost:${PORT}/api/drive/upload`); // ✅ NUEVO
+  
+  // ✅ NUEVO: Verificar configuración de APIs de Google
+  console.log('\n🔧 Configuración de APIs de Google:');
+  console.log(`   📁 Google Drive: ${process.env.GOOGLE_DRIVE_CLIENT_ID ? '✅ Configurado' : '❌ No configurado'}`);
+  console.log(`   🗺️  Google Maps: ${process.env.GOOGLE_MAPS_API_KEY ? '✅ Configurado' : '❌ No configurado'}`);
+  console.log(`   📅 Google Calendar: ${process.env.GOOGLE_CALENDAR_CLIENT_ID ? '✅ Configurado' : '❌ No configurado'}`);
 });
-

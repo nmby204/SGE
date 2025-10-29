@@ -2,24 +2,42 @@ import api from './api';
 
 export const planningService = {
   createPlanning: async (planningData) => {
-    const formData = new FormData();
+    console.log('🔄 planningService.createPlanning llamado con:', planningData);
     
-    // Agregar campos de texto (incluyendo courseName)
-    Object.keys(planningData).forEach(key => {
-      if (key !== 'file' && planningData[key] !== undefined) {
-        formData.append(key, planningData[key]);
+    // ✅ DETECTAR SI ES GOOGLE DRIVE O LOCAL
+    const isGoogleDrive = planningData.driveFileId && planningData.fileUrl;
+    
+    if (isGoogleDrive) {
+      console.log('☁️ Enviando datos de Google Drive al backend');
+      // Enviar como JSON normal (sin FormData)
+      const response = await api.post('/planning', planningData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } else {
+      console.log('📂 Enviando archivo local con FormData');
+      // Método original con FormData
+      const formData = new FormData();
+      
+      Object.keys(planningData).forEach(key => {
+        if (key !== 'file' && planningData[key] !== undefined) {
+          formData.append(key, planningData[key]);
+        }
+      });
+      
+      if (planningData.file) {
+        formData.append('file', planningData.file);
       }
-    });
-    
-    // Agregar archivo si existe
-    if (planningData.file) {
-      formData.append('file', planningData.file);
-    }
 
-    const response = await api.post('/planning', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+      const response = await api.post('/planning', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data' 
+        }
+      });
+      return response.data;
+    }
   },
 
   // Los demás métodos se mantienen igual...
@@ -39,22 +57,38 @@ export const planningService = {
   },
 
   updatePlanning: async (id, planningData) => {
-    const formData = new FormData();
+    console.log('🔄 planningService.updatePlanning llamado con:', planningData);
     
-    Object.keys(planningData).forEach(key => {
-      if (key !== 'file' && planningData[key] !== undefined) {
-        formData.append(key, planningData[key]);
+    // ✅ DETECTAR SI ES GOOGLE DRIVE O LOCAL
+    const isGoogleDrive = planningData.driveFileId && planningData.fileUrl;
+    
+    if (isGoogleDrive) {
+      console.log('☁️ Enviando datos de Google Drive al backend (update)');
+      const response = await api.put(`/planning/${id}`, planningData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } else {
+      console.log('📂 Enviando archivo local con FormData (update)');
+      const formData = new FormData();
+      
+      Object.keys(planningData).forEach(key => {
+        if (key !== 'file' && planningData[key] !== undefined) {
+          formData.append(key, planningData[key]);
+        }
+      });
+      
+      if (planningData.file) {
+        formData.append('file', planningData.file);
       }
-    });
-    
-    if (planningData.file) {
-      formData.append('file', planningData.file);
-    }
 
-    const response = await api.put(`/planning/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+      const response = await api.put(`/planning/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    }
   },
 
   reviewPlanning: async (id, reviewData) => {
