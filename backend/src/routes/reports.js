@@ -1,5 +1,5 @@
 const express = require('express');
-const { auth, authorize } = require('../middleware/auth');
+const { auth, authorize } = require('../middlewares/auth');
 const {
   getPlanningCompliance,
   getPartialProgressReport,
