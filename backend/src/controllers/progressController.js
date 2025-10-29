@@ -1,4 +1,4 @@
-const { PartialProgress, DidacticPlanning, Course, User } = require('../models');
+const { PartialProgress, DidacticPlanning, User } = require('../models');
 const { validationResult } = require('express-validator');
 
 const createProgress = async (req, res) => {
@@ -24,7 +24,7 @@ const createProgress = async (req, res) => {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['course', 'professor']
+        include: ['professor'] // QUITAR 'course'
       }]
     });
 
@@ -44,7 +44,7 @@ const getProgressByPlanning = async (req, res) => {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['course', 'professor']
+        include: ['professor'] // QUITAR 'course'
       }],
       order: [['partial', 'ASC']]
     });
@@ -63,13 +63,17 @@ const getProgressStats = async (req, res) => {
 
     if (partial) where.partial = parseInt(partial);
 
+    // QUITAR courseId del where clause ya que no existe más
+    const planningWhere = {};
+    // if (courseId) planningWhere.courseId = courseId; // ELIMINAR esta línea
+
     const progress = await PartialProgress.findAll({
       where,
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        where: courseId ? { courseId } : {},
-        include: ['course', 'professor']
+        where: planningWhere,
+        include: ['professor'] // QUITAR 'course'
       }]
     });
 
@@ -118,7 +122,7 @@ const updateProgress = async (req, res) => {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['course', 'professor']
+        include: ['professor'] // QUITAR 'course'
       }]
     });
 

@@ -1,44 +1,69 @@
-const { DidacticPlanning, Course, User, PartialProgress } = require('../models');
+const { DidacticPlanning, User, PartialProgress } = require('../models');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 
 const createPlanning = async (req, res) => {
   try {
+    console.log('🔍 === INICIANDO CREACIÓN DE PLANEACIÓN ===');
+    console.log('📝 Body recibido:', req.body);
+    console.log('📁 Archivo recibido:', req.file);
+    console.log('👤 Usuario autenticado:', req.user);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Errores de validación:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Preparar datos para la planeación
     const planningData = {
       ...req.body,
       professorId: req.user.id,
       fileUrl: req.file ? req.file.path : null
     };
 
-    const planning = await DidacticPlanning.create(planningData);
+    // Asegurarnos de que no haya courseId
+    delete planningData.courseId;
 
-    // Include related data in response
+    console.log('📊 Datos finales para crear:', planningData);
+
+    // Validar tipos de datos
+    if (planningData.partial) {
+      planningData.partial = parseInt(planningData.partial);
+    }
+
+    // Crear la planeación
+    const planning = await DidacticPlanning.create(planningData);
+    console.log('✅ Planeación creada exitosamente. ID:', planning.id);
+
+    // Obtener la planeación con datos relacionados
     const newPlanning = await DidacticPlanning.findByPk(planning.id, {
       include: [
-        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' }
+        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ]
     });
 
     res.status(201).json(newPlanning);
+
   } catch (error) {
-    console.error('Create planning error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Create planning error:', error);
+    console.error('🔍 Error details:', error.message);
+    console.error('📋 Stack:', error.stack);
+    
+    res.status(500).json({ 
+      message: 'Error del servidor al crear la planeación',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const getPlannings = async (req, res) => {
   try {
-    const { courseId, partial, status, cycle } = req.query;
-    const where = {};
+    const { courseName, partial, status, cycle } = req.query;
+    const where = { isActive: true };
 
-    // Filter by course
-    if (courseId) where.courseId = courseId;
+    // Filter by courseName
+    if (courseName) where.courseName = { [Op.iLike]: `%${courseName}%` };
     
     // Filter by partial
     if (partial) where.partial = parseInt(partial);
@@ -54,88 +79,122 @@ const getPlannings = async (req, res) => {
       where.professorId = req.user.id;
     }
 
+    console.log('🔍 Buscando planeaciones con filtros:', where);
+
     const plannings = await DidacticPlanning.findAll({
       where,
       include: [
         { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' },
         { model: PartialProgress, as: 'progress' }
       ],
       order: [['createdAt', 'DESC']]
     });
 
+    console.log(`✅ Encontradas ${plannings.length} planeaciones`);
     res.json(plannings);
+
   } catch (error) {
-    console.error('Get plannings error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Get plannings error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al obtener planeaciones',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const getPlanningById = async (req, res) => {
   try {
-    const planning = await DidacticPlanning.findByPk(req.params.id, {
+    const { id } = req.params;
+    console.log('🔍 Buscando planeación con ID:', id);
+
+    const planning = await DidacticPlanning.findOne({
+      where: { id, isActive: true },
       include: [
         { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' },
         { model: PartialProgress, as: 'progress' }
       ]
     });
 
     if (!planning) {
-      return res.status(404).json({ message: 'Planning not found' });
+      console.log('❌ Planeación no encontrada:', id);
+      return res.status(404).json({ message: 'Planeación no encontrada' });
     }
 
     // Check permissions
     if (req.user.role === 'professor' && planning.professorId !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to view this planning' });
+      console.log('❌ Usuario no autorizado para ver esta planeación');
+      return res.status(403).json({ message: 'No autorizado para ver esta planeación' });
     }
 
+    console.log('✅ Planeación encontrada:', planning.id);
     res.json(planning);
+
   } catch (error) {
-    console.error('Get planning error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Get planning error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al obtener la planeación',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const getPlanningHistory = async (req, res) => {
   try {
-    const { courseId } = req.params;
+    const { courseName } = req.params;
     const { cycle } = req.query;
 
-    const where = { courseId };
-    if (cycle) where.cycle = { [Op.ne]: cycle }; // Exclude current cycle
+    console.log('🔍 Buscando historial para materia:', courseName);
+
+    const where = { 
+      courseName,
+      isActive: true 
+    };
+    
+    if (cycle) where.cycle = { [Op.ne]: cycle };
 
     const history = await DidacticPlanning.findAll({
       where,
       include: [
-        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' }
+        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ],
       order: [['cycle', 'DESC'], ['partial', 'ASC']]
     });
 
+    console.log(`✅ Encontradas ${history.length} planeaciones en el historial`);
     res.json(history);
+
   } catch (error) {
-    console.error('Get planning history error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Get planning history error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al obtener el historial',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const updatePlanning = async (req, res) => {
   try {
+    const { id } = req.params;
+    console.log('🔍 Actualizando planeación con ID:', id);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const planning = await DidacticPlanning.findByPk(req.params.id);
+    const planning = await DidacticPlanning.findOne({
+      where: { id, isActive: true }
+    });
+
     if (!planning) {
-      return res.status(404).json({ message: 'Planning not found' });
+      console.log('❌ Planeación no encontrada para actualizar:', id);
+      return res.status(404).json({ message: 'Planeación no encontrada' });
     }
 
     // Check permissions
     if (req.user.role === 'professor' && planning.professorId !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to update this planning' });
+      console.log('❌ Usuario no autorizado para actualizar esta planeación');
+      return res.status(403).json({ message: 'No autorizado para actualizar esta planeación' });
     }
 
     const updateData = { ...req.body };
@@ -143,72 +202,110 @@ const updatePlanning = async (req, res) => {
       updateData.fileUrl = req.file.path;
     }
 
+    // Asegurarnos de que no haya courseId
+    delete updateData.courseId;
+
+    console.log('📊 Datos para actualizar:', updateData);
+
     await planning.update(updateData);
 
     const updatedPlanning = await DidacticPlanning.findByPk(planning.id, {
       include: [
-        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' }
+        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ]
     });
 
+    console.log('✅ Planeación actualizada exitosamente');
     res.json(updatedPlanning);
+
   } catch (error) {
-    console.error('Update planning error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Update planning error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al actualizar la planeación',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const reviewPlanning = async (req, res) => {
   try {
+    const { id } = req.params;
+    console.log('🔍 Revisando planeación con ID:', id);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     if (req.user.role !== 'coordinator' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to review plannings' });
+      console.log('❌ Usuario no autorizado para revisar planeaciones');
+      return res.status(403).json({ message: 'No autorizado para revisar planeaciones' });
     }
 
-    const planning = await DidacticPlanning.findByPk(req.params.id);
+    const planning = await DidacticPlanning.findOne({
+      where: { id, isActive: true }
+    });
+
     if (!planning) {
-      return res.status(404).json({ message: 'Planning not found' });
+      console.log('❌ Planeación no encontrada para revisión:', id);
+      return res.status(404).json({ message: 'Planeación no encontrada' });
     }
 
     const { status, feedback } = req.body;
+    console.log('📝 Revisión - Estado:', status, 'Feedback:', feedback);
+
     await planning.update({ status, feedback });
 
     const updatedPlanning = await DidacticPlanning.findByPk(planning.id, {
       include: [
-        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] },
-        { model: Course, as: 'course' }
+        { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ]
     });
 
+    console.log('✅ Planeación revisada exitosamente');
     res.json(updatedPlanning);
+
   } catch (error) {
-    console.error('Review planning error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Review planning error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al revisar la planeación',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 
 const deletePlanning = async (req, res) => {
   try {
-    const planning = await DidacticPlanning.findByPk(req.params.id);
+    const { id } = req.params;
+    console.log('🔍 Eliminando planeación con ID:', id);
+
+    const planning = await DidacticPlanning.findOne({
+      where: { id, isActive: true }
+    });
+
     if (!planning) {
-      return res.status(404).json({ message: 'Planning not found' });
+      console.log('❌ Planeación no encontrada para eliminar:', id);
+      return res.status(404).json({ message: 'Planeación no encontrada' });
     }
 
     // Check permissions
     if (req.user.role === 'professor' && planning.professorId !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to delete this planning' });
+      console.log('❌ Usuario no autorizado para eliminar esta planeación');
+      return res.status(403).json({ message: 'No autorizado para eliminar esta planeación' });
     }
 
-    await planning.destroy();
-    res.json({ message: 'Planning deleted successfully' });
+    // Soft delete
+    await planning.update({ isActive: false });
+
+    console.log('✅ Planeación eliminada exitosamente (soft delete)');
+    res.json({ message: 'Planeación eliminada exitosamente' });
+
   } catch (error) {
-    console.error('Delete planning error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Delete planning error:', error);
+    res.status(500).json({ 
+      message: 'Error del servidor al eliminar la planeación',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 };
 

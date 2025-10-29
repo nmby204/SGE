@@ -123,18 +123,35 @@ router.get('/planning/:planningId', getProgressByPlanning);
  *           maximum: 3
  *         description: Filtrar por parcial
  *       - in: query
- *         name: courseId
+ *         name: professorId
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Filtrar por ID de materia
+ *         description: Filtrar por ID del profesor
  *     responses:
  *       200:
  *         description: Estadísticas de avances
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ProgressStats'
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   description: Total de avances
+ *                 fulfilled:
+ *                   type: integer
+ *                   description: Avances cumplidos
+ *                 partial:
+ *                   type: integer
+ *                   description: Avances parciales
+ *                 unfulfilled:
+ *                   type: integer
+ *                   description: Avances no cumplidos
+ *                 averageProgress:
+ *                   type: number
+ *                   format: float
+ *                   description: Porcentaje promedio de avance
  *       500:
  *         description: Error del servidor
  */

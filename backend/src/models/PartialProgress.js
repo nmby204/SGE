@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     progressPercentage: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: 'progress_percentage',
       validate: {
         min: 0,
         max: 100
@@ -38,15 +39,29 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
       field: 'is_active'
+    },
+    planningId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: 'planning_id',
+      references: {
+        model: 'didactic_plannings',
+        key: 'id'
+      }
     }
   }, {
     tableName: 'partial_progress',
     timestamps: true,
-    underscored: true
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   PartialProgress.associate = function(models) {
-    PartialProgress.belongsTo(models.DidacticPlanning, { foreignKey: 'planningId', as: 'planning' });
+    PartialProgress.belongsTo(models.DidacticPlanning, { 
+      foreignKey: 'planningId', 
+      as: 'planning' 
+    });
   };
 
   return PartialProgress;

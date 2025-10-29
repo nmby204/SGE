@@ -34,7 +34,8 @@ module.exports = (sequelize, DataTypes) => {
 
   Course.associate = function(models) {
     Course.belongsTo(models.User, { foreignKey: 'coordinatorId', as: 'coordinator' });
-    Course.hasMany(models.DidacticPlanning, { foreignKey: 'courseId', as: 'plannings' });
+    // ❌ ELIMINAR o COMENTAR esta línea:
+    // Course.hasMany(models.DidacticPlanning, { foreignKey: 'courseId', as: 'plannings' });
   };
 
   return Course;

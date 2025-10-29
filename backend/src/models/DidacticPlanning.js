@@ -5,6 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
+    courseName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     partial: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -59,7 +63,8 @@ module.exports = (sequelize, DataTypes) => {
 
   DidacticPlanning.associate = function(models) {
     DidacticPlanning.belongsTo(models.User, { foreignKey: 'professorId', as: 'professor' });
-    DidacticPlanning.belongsTo(models.Course, { foreignKey: 'courseId', as: 'course' });
+    // Eliminamos la relación con Course ya que usamos courseName directamente
+    // DidacticPlanning.belongsTo(models.Course, { foreignKey: 'courseId', as: 'course' });
     DidacticPlanning.hasMany(models.PartialProgress, { foreignKey: 'planningId', as: 'progress' });
   };
 
