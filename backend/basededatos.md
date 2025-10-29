@@ -222,3 +222,4 @@ SELECT
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 AND table_name IN ('users', 'courses', 'didactic_plannings', 'partial_progress', 'evidences');
+
