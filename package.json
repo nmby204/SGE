@@ -1,0 +1,38 @@
+{
+  "name": "sistema-planeacion-backend",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de planeación didáctica",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "init-admin": "node src/scripts/initAdmin.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "sequelize": "^6.32.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express-validator": "^7.0.1",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.14.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "education",
+    "planning",
+    "didactic",
+    "api"
+  ],
+  "author": "brian",
+  "license": "MIT"
+}
