@@ -1,3 +1,4 @@
+// routes/userRoutes.js - Versión corregida
 const express = require('express');
 const { body } = require('express-validator');
 const { auth, authorize } = require('../middlewares/auth');
@@ -6,7 +7,8 @@ const {
   getProfessors,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  createUser
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -29,6 +31,11 @@ router.use(auth);
  *           type: string
  *           enum: [admin, coordinator, professor]
  *         description: Filtrar por rol
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar por estado activo/inactivo
  *     responses:
  *       200:
  *         description: Lista de usuarios
@@ -43,7 +50,7 @@ router.use(auth);
  *       500:
  *         description: Error del servidor
  */
-router.get('/', authorize('admin', 'coordinator'), getUsers);
+router.get('/', authorize(['admin', 'coordinator']), getUsers);
 
 /**
  * @swagger
@@ -67,13 +74,61 @@ router.get('/', authorize('admin', 'coordinator'), getUsers);
  *       500:
  *         description: Error del servidor
  */
-router.get('/professors', authorize('admin', 'coordinator'), getProfessors);
+router.get('/professors', authorize(['admin', 'coordinator']), getProfessors);
+
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: Crear nuevo usuario (Solo Admin)
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               role:
+ *                 type: string
+ *                 enum: [admin, coordinator, professor]
+ *                 default: professor
+ *     responses:
+ *       201:
+ *         description: Usuario creado exitosamente
+ *       400:
+ *         description: Datos inválidos o email ya existe
+ *       403:
+ *         description: No autorizado (solo admin)
+ *       500:
+ *         description: Error del servidor
+ */
+router.post('/', authorize(['admin']), [
+  body('name', 'Name is required').notEmpty(),
+  body('email', 'Please include a valid email').isEmail(),
+  body('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
+  body('role', 'Role must be admin, coordinator or professor').optional().isIn(['admin', 'coordinator', 'professor'])
+], createUser);
 
 /**
  * @swagger
  * /users/{id}:
  *   get:
- *     summary: Obtener usuario por ID
+ *     summary: Obtener usuario por ID (Admin/Coordinador)
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -97,13 +152,13 @@ router.get('/professors', authorize('admin', 'coordinator'), getProfessors);
  *       500:
  *         description: Error del servidor
  */
-router.get('/:id', getUserById);
+router.get('/:id', authorize(['admin', 'coordinator']), getUserById);
 
 /**
  * @swagger
  * /users/{id}:
  *   put:
- *     summary: Actualizar usuario
+ *     summary: Actualizar usuario (Admin puede actualizar cualquier usuario, otros solo su propio perfil)
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -134,7 +189,7 @@ router.get('/:id', getUserById);
  *                 user:
  *                   $ref: '#/components/schemas/User'
  *       403:
- *         description: No autorizado para actualizar roles
+ *         description: No autorizado para actualizar este usuario
  *       404:
  *         description: Usuario no encontrado
  *       500:
@@ -178,6 +233,6 @@ router.put('/:id', [
  *       500:
  *         description: Error del servidor
  */
-router.delete('/:id', authorize('admin'), deleteUser);
+router.delete('/:id', authorize(['admin']), deleteUser);
 
 module.exports = router;

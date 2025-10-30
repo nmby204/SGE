@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import Modal from '../../components/Common/Modal';
+import './UserList.css';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -12,8 +12,19 @@ const UserList = () => {
     role: ''
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [viewUserModalOpen, setViewUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
   const { user: currentUser, hasRole } = useAuth();
+
+  // Estado para nuevo usuario
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'professor'
+  });
 
   useEffect(() => {
     loadUsers();
@@ -42,6 +53,27 @@ const UserList = () => {
     setDeleteModalOpen(true);
   };
 
+  const openAddUserModal = () => {
+    setAddUserModalOpen(true);
+  };
+
+  const openViewUserModal = async (user) => {
+    try {
+      // Cargar información completa del usuario
+      const userData = await userService.getUserById(user.id);
+      setSelectedUser(userData);
+      setViewUserModalOpen(true);
+    } catch (error) {
+      console.error('Error cargando usuario:', error);
+      alert('Error al cargar la información del usuario');
+    }
+  };
+
+  const closeViewUserModal = () => {
+    setViewUserModalOpen(false);
+    setSelectedUser(null);
+  };
+
   const handleDelete = async () => {
     try {
       await userService.deleteUser(userToDelete.id);
@@ -52,6 +84,32 @@ const UserList = () => {
       console.error('Error eliminando usuario:', error);
       alert('Error al eliminar el usuario');
     }
+  };
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    try {
+      await userService.createUser(newUser);
+      alert('Usuario creado exitosamente');
+      setAddUserModalOpen(false);
+      setNewUser({
+        name: '',
+        email: '',
+        password: '',
+        role: 'professor'
+      });
+      loadUsers(); // Recargar lista
+    } catch (error) {
+      console.error('Error creando usuario:', error);
+      alert('Error al crear el usuario: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleNewUserChange = (field, value) => {
+    setNewUser(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const getRoleBadge = (role) => {
@@ -65,10 +123,13 @@ const UserList = () => {
     return <span className={`role-badge ${roleInfo.class}`}>{roleInfo.text}</span>;
   };
 
-  const getStatusBadge = (isActive) => {
-    return isActive ? 
-      <span className="status-badge status-approved">Activo</span> :
-      <span className="status-badge status-rejected">Inactivo</span>;
+  const getRoleDisplay = (role) => {
+    const roleMap = {
+      admin: 'Administrador',
+      coordinator: 'Coordinador',
+      professor: 'Profesor'
+    };
+    return roleMap[role] || role;
   };
 
   // Solo admin puede eliminar usuarios
@@ -85,9 +146,9 @@ const UserList = () => {
       <div className="page-header">
         <h1>Gestión de Usuarios</h1>
         {hasRole('admin') && (
-          <Link to="/register" className="btn-primary">
-            Nuevo Usuario
-          </Link>
+          <button onClick={openAddUserModal} className="btn-primary">
+            ➕ Nuevo Usuario
+          </button>
         )}
       </div>
 
@@ -104,7 +165,7 @@ const UserList = () => {
         </select>
 
         <button onClick={loadUsers} className="btn-secondary">
-          Aplicar Filtros
+          🔄 Actualizar
         </button>
       </div>
 
@@ -116,7 +177,6 @@ const UserList = () => {
               <th>Nombre</th>
               <th>Email</th>
               <th>Rol</th>
-              <th>Estado</th>
               <th>Fecha de Registro</th>
               <th>Acciones</th>
             </tr>
@@ -127,21 +187,23 @@ const UserList = () => {
                 <tr key={user.id}>
                   <td>
                     <div className="user-info">
+                      <div className="user-avatar">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
                       <strong>{user.name}</strong>
                     </div>
                   </td>
                   <td>{user.email}</td>
                   <td>{getRoleBadge(user.role)}</td>
-                  <td>{getStatusBadge(user.isActive)}</td>
-                  <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td>{new Date(user.createdAt).toLocaleDateString('es-MX')}</td>
                   <td>
                     <div className="user-actions">
-                      <Link 
-                        to={`/users/${user.id}`}
+                      <button 
+                        onClick={() => openViewUserModal(user)}
                         className="btn-secondary small"
                       >
-                        Ver
-                      </Link>
+                         Ver
+                      </button>
                       
                       {hasRole('admin') && user.id !== currentUser.id && (
                         <button 
@@ -149,7 +211,7 @@ const UserList = () => {
                           className="btn-danger small"
                           disabled={!canDelete}
                         >
-                          Eliminar
+                          🗑️ Eliminar
                         </button>
                       )}
                     </div>
@@ -158,7 +220,7 @@ const UserList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="empty-table">
+                <td colSpan="5" className="empty-table">
                   No se encontraron usuarios
                 </td>
               </tr>
@@ -167,11 +229,164 @@ const UserList = () => {
         </table>
       </div>
 
+      {/* Modal de Agregar Usuario */}
+      <Modal
+        isOpen={addUserModalOpen}
+        onClose={() => setAddUserModalOpen(false)}
+        title="➕ Agregar Nuevo Usuario"
+        size="medium"
+      >
+        <form onSubmit={handleAddUser} className="user-form">
+          <div className="form-group">
+            <label>Nombre completo *</label>
+            <input
+              type="text"
+              value={newUser.name}
+              onChange={(e) => handleNewUserChange('name', e.target.value)}
+              placeholder="Ingrese el nombre completo"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Correo electrónico *</label>
+            <input
+              type="email"
+              value={newUser.email}
+              onChange={(e) => handleNewUserChange('email', e.target.value)}
+              placeholder="usuario@ejemplo.com"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Contraseña *</label>
+            <input
+              type="password"
+              value={newUser.password}
+              onChange={(e) => handleNewUserChange('password', e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              minLength="6"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Rol *</label>
+            <select
+              value={newUser.role}
+              onChange={(e) => handleNewUserChange('role', e.target.value)}
+            >
+              <option value="professor">Profesor</option>
+              <option value="coordinator">Coordinador</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+
+          <div className="form-actions">
+            <button 
+              type="button"
+              onClick={() => setAddUserModalOpen(false)}
+              className="btn-secondary"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              className="btn-primary"
+            >
+              Crear Usuario
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal de Ver Usuario */}
+      <Modal
+        isOpen={viewUserModalOpen}
+        onClose={closeViewUserModal}
+        title="👤 Información del Usuario"
+        size="medium"
+      >
+        {selectedUser && (
+          <div className="user-details">
+            <div className="user-header">
+              <div className="user-avatar-large">
+                {selectedUser.name?.charAt(0).toUpperCase()}
+              </div>
+              <div className="user-basic-info">
+                <h3>{selectedUser.name}</h3>
+                <p>{selectedUser.email}</p>
+              </div>
+            </div>
+
+            <div className="user-details-grid">
+              <div className="detail-item">
+                <label>Rol:</label>
+                <span className={`role-tag role-${selectedUser.role}`}>
+                  {getRoleDisplay(selectedUser.role)}
+                </span>
+              </div>
+
+              <div className="detail-item">
+                <label>Estado:</label>
+                <span className={`status-tag ${selectedUser.isActive ? 'status-active' : 'status-inactive'}`}>
+                  {selectedUser.isActive ? '🟢 Activo' : '🔴 Inactivo'}
+                </span>
+              </div>
+
+              <div className="detail-item">
+                <label>Fecha de registro:</label>
+                <span>{new Date(selectedUser.createdAt).toLocaleDateString('es-MX', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</span>
+              </div>
+
+              <div className="detail-item">
+                <label>Última actualización:</label>
+                <span>{new Date(selectedUser.updatedAt).toLocaleDateString('es-MX', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</span>
+              </div>
+
+              <div className="detail-item full-width">
+                <label>ID de usuario:</label>
+                <span className="user-id">{selectedUser.id}</span>
+              </div>
+            </div>
+
+            <div className="user-actions-modal">
+              <button 
+                onClick={closeViewUserModal}
+                className="btn-secondary"
+              >
+                Cerrar
+              </button>
+              {hasRole('admin') && selectedUser.id !== currentUser.id && (
+                <button 
+                  onClick={() => {
+                    closeViewUserModal();
+                    openDeleteModal(selectedUser);
+                  }}
+                  className="btn-danger"
+                >
+                  Eliminar Usuario
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Modal de confirmación de eliminación */}
       <Modal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title="Confirmar Eliminación"
+        title="🗑️ Confirmar Eliminación"
         size="small"
       >
         {userToDelete && (

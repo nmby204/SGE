@@ -30,15 +30,25 @@ const auth = async (req, res, next) => {
   }
 };
 
+// CORREGIDO: Aceptar tanto array como argumentos separados
 const authorize = (...roles) => {
+  // Si el primer argumento es un array, usarlo directamente
+  if (roles.length === 1 && Array.isArray(roles[0])) {
+    roles = roles[0];
+  }
+
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
+    console.log(`🔐 Autorización: Usuario ${req.user.role} intentando acceder. Roles permitidos: ${roles.join(', ')}`);
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ 
-        message: `Access denied. Required roles: ${roles.join(', ')}` 
+        message: `Access denied. Required roles: ${roles.join(', ')}`,
+        userRole: req.user.role,
+        requiredRoles: roles
       });
     }
 
