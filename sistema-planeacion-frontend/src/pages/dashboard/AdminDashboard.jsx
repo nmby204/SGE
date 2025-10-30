@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { reportService } from '../../services/reportService';
 import { userService } from '../../services/userService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import '../../styles/evidence-styles.css';
-
+import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import './styles/dashboard.css';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -79,6 +79,11 @@ const AdminDashboard = () => {
           <p className="stat-number">{stats.complianceRate}%</p>
           <Link to="/reports" className="stat-link">Ver reportes</Link>
         </div>
+      </div>
+
+      {/* Calendario */}
+      <div className="dashboard-section">
+        <CalendarWidget />
       </div>
 
       {/* Acciones rápidas */}

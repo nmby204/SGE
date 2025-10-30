@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { evidenceService } from '../../services/evidenceService';
 import FileUpload from '../../components/Common/FileUpload';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import '../../styles/evidence-styles.css';
+
 
 const CreateEvidence = () => {
   const [formData, setFormData] = useState({

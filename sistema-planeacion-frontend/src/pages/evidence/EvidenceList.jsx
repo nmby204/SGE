@@ -4,7 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { evidenceService } from '../../services/evidenceService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import Modal from '../../components/Common/Modal';
-import '../../styles/evidence-styles.css';
+import FileUpload from '../../components/Common/FileUpload';
+import './styles/evidence.css';
+
 const EvidenceList = () => {
   const [evidences, setEvidences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,11 +14,24 @@ const EvidenceList = () => {
     status: ''
   });
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [reviewData, setReviewData] = useState({
     status: 'approved',
     feedback: ''
   });
+  
+  // Estados para el modal de creación
+  const [formData, setFormData] = useState({
+    courseName: '',
+    institution: '',
+    date: '',
+    hours: ''
+  });
+  const [file, setFile] = useState(null);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
+
   const { user, hasRole } = useAuth();
 
   useEffect(() => {
@@ -57,11 +72,79 @@ const EvidenceList = () => {
       await evidenceService.reviewEvidence(selectedEvidence.id, reviewData);
       alert('Revisión enviada exitosamente');
       setReviewModalOpen(false);
-      loadEvidences(); // Recargar lista
+      loadEvidences();
     } catch (error) {
       console.error('Error enviando revisión:', error);
       alert('Error al enviar la revisión');
     }
+  };
+
+  // Funciones para el modal de creación
+  const handleCreateChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileSelect = (selectedFile) => {
+    setFile(selectedFile);
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+
+    if (!file) {
+      setCreateError('Debe subir un archivo de evidencia');
+      setCreateLoading(false);
+      return;
+    }
+
+    try {
+      const evidenceData = {
+        ...formData,
+        file: file,
+        hours: parseInt(formData.hours)
+      };
+
+      await evidenceService.createEvidence(evidenceData);
+      alert('Evidencia registrada exitosamente');
+      handleCreateSuccess();
+      closeCreateModal();
+    } catch (error) {
+      console.error('Error creando evidencia:', error);
+      setCreateError(error.response?.data?.message || 'Error al registrar la evidencia');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleCreateSuccess = () => {
+    loadEvidences();
+  };
+
+  const openCreateModal = () => {
+    setCreateModalOpen(true);
+    resetCreateForm();
+  };
+
+  const closeCreateModal = () => {
+    setCreateModalOpen(false);
+    resetCreateForm();
+  };
+
+  const resetCreateForm = () => {
+    setFormData({
+      courseName: '',
+      institution: '',
+      date: '',
+      hours: ''
+    });
+    setFile(null);
+    setCreateError('');
   };
 
   const getStatusBadge = (status) => {
@@ -87,9 +170,12 @@ const EvidenceList = () => {
       <div className="page-header">
         <h1>Evidencias de Capacitación</h1>
         {hasRole('professor') && (
-          <Link to="/evidence/create" className="btn-primary">
+          <button 
+            onClick={openCreateModal} 
+            className="btn-primary"
+          >
             Nueva Evidencia
-          </Link>
+          </button>
         )}
       </div>
 
@@ -178,13 +264,128 @@ const EvidenceList = () => {
           <div className="empty-state">
             <p>No se encontraron evidencias</p>
             {hasRole('professor') && (
-              <Link to="/evidence/create" className="btn-primary">
+              <button 
+                onClick={openCreateModal} 
+                className="btn-primary"
+              >
                 Registrar primera evidencia
-              </Link>
+              </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Modal de creación de evidencia */}
+      <Modal
+        isOpen={createModalOpen}
+        onClose={closeCreateModal}
+        title="Registrar Nueva Evidencia"
+        size="large"
+      >
+        <div className="create-evidence-modal">
+          {createError && (
+            <div className="error-message">
+              {createError}
+            </div>
+          )}
+
+          <form onSubmit={handleCreateSubmit} className="evidence-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="courseName">Nombre del Curso/Taller *</label>
+                <input
+                  type="text"
+                  id="courseName"
+                  name="courseName"
+                  value={formData.courseName}
+                  onChange={handleCreateChange}
+                  required
+                  placeholder="Ej: Curso de Actualización Docente"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="institution">Institución Emisora *</label>
+                <input
+                  type="text"
+                  id="institution"
+                  name="institution"
+                  value={formData.institution}
+                  onChange={handleCreateChange}
+                  required
+                  placeholder="Ej: Universidad Nacional"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="date">Fecha del Curso *</label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleCreateChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="hours">Horas Acreditadas *</label>
+                <input
+                  type="number"
+                  id="hours"
+                  name="hours"
+                  value={formData.hours}
+                  onChange={handleCreateChange}
+                  required
+                  min="1"
+                  placeholder="Ej: 40"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Constancia o Documento Comprobatorio *</label>
+              <FileUpload onFileSelect={handleFileSelect} />
+              <small>Suba el documento que acredita la capacitación (PDF, imagen, constancia)</small>
+            </div>
+
+            <div className="form-note">
+              <h4>Nota:</h4>
+              <p>
+                La evidencia será enviada para revisión por parte de la coordinación. 
+                Recibirá una notificación cuando sea aprobada o si se requieren ajustes.
+              </p>
+            </div>
+
+            <div className="form-actions">
+              <button 
+                type="button" 
+                onClick={closeCreateModal}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                disabled={createLoading || !file}
+                className="btn-primary"
+              >
+                {createLoading ? (
+                  <>
+                    <LoadingSpinner size="small" />
+                    Registrando...
+                  </>
+                ) : (
+                  'Registrar Evidencia'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
 
       {/* Modal de revisión */}
       <Modal

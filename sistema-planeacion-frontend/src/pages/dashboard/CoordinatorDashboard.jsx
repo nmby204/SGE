@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { reportService } from '../../services/reportService';
 import { planningService } from '../../services/planningService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import './styles/dashboard.css';
 
 const CoordinatorDashboard = () => {
   const [stats, setStats] = useState({
@@ -82,6 +84,11 @@ const CoordinatorDashboard = () => {
           <p className="stat-number">{stats.approvedCourses}</p>
           <Link to="/reports" className="stat-link">Ver reportes</Link>
         </div>
+      </div>
+
+      {/* Calendario */}
+      <div className="dashboard-section">
+        <CalendarWidget />
       </div>
 
       {/* Pendientes de revisión */}

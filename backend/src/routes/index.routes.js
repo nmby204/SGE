@@ -9,6 +9,7 @@ const progressRoutes = require('./progress');
 const evidenceRoutes = require('./evidence');
 const reportRoutes = require('./reports');
 const driveRoutes = require('./drive'); // ✅ NUEVO: Google Drive
+const calendarRoutes = require('./calendar'); // ← NUEVA RUTA
 
 // Usar rutas
 router.use('/auth', authRoutes);
@@ -18,6 +19,7 @@ router.use('/progress', progressRoutes);
 router.use('/evidence', evidenceRoutes);
 router.use('/reports', reportRoutes);
 router.use('/drive', driveRoutes); // ✅ NUEVO: Google Drive
+router.use('/calendar', calendarRoutes); // ← NUEVA RUTA
 
 // Debug route
 router.get('/debug', (req, res) => {

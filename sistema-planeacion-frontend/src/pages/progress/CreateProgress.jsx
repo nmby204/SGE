@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { progressService } from '../../services/progressService';
 import { planningService } from '../../services/planningService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import Modal from '../../components/Common/Modal';
+import './styles/progress.css';
 
-const CreateProgress = () => {
+const CreateProgress = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     planningId: '',
     partial: '',
@@ -18,19 +19,28 @@ const CreateProgress = () => {
   const [loading, setLoading] = useState(false);
   const [loadingPlannings, setLoadingPlannings] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  // Obtener planningId de la ubicación si viene de una planeación específica
+  // Reset form cuando se abre/cierra el modal
   useEffect(() => {
-    if (location.state?.planningId) {
-      setFormData(prev => ({
-        ...prev,
-        planningId: location.state.planningId
-      }));
+    if (!isOpen) {
+      resetForm();
+    } else {
+      loadPlannings();
     }
-    loadPlannings();
-  }, [location]);
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setFormData({
+      planningId: '',
+      partial: '',
+      progressPercentage: '',
+      status: '',
+      achievements: '',
+      challenges: '',
+      adjustments: ''
+    });
+    setError('');
+  };
 
   const loadPlannings = async () => {
     try {
@@ -38,6 +48,7 @@ const CreateProgress = () => {
       setPlannings(data);
     } catch (error) {
       console.error('Error cargando planeaciones:', error);
+      setError('Error al cargar las planeaciones');
     } finally {
       setLoadingPlannings(false);
     }
@@ -72,9 +83,10 @@ const CreateProgress = () => {
     setError('');
 
     try {
-      await progressService.createProgress(formData);
+      const result = await progressService.createProgress(formData);
       alert('Avance registrado exitosamente');
-      navigate('/progress');
+      onSuccess?.(result);
+      onClose?.();
     } catch (error) {
       console.error('Error registrando avance:', error);
       setError(error.response?.data?.message || 'Error al registrar el avance');
@@ -92,19 +104,27 @@ const CreateProgress = () => {
     return statusMap[status] || status;
   };
 
-  if (loadingPlannings) {
-    return <LoadingSpinner text="Cargando planeaciones..." />;
+  const handleClose = () => {
+    if (!loading) {
+      onClose?.();
+    }
+  };
+
+  if (loadingPlannings && isOpen) {
+    return (
+      <Modal isOpen={isOpen} onClose={handleClose} title="Registrar Avance Parcial">
+        <LoadingSpinner text="Cargando planeaciones..." />
+      </Modal>
+    );
   }
 
   return (
-    <div className="create-progress">
-      <div className="page-header">
-        <h1>Registrar Avance Parcial</h1>
-        <button onClick={() => navigate('/progress')} className="btn-secondary">
-          Volver a Avances
-        </button>
-      </div>
-
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose}
+      title="Registrar Avance Parcial"
+      size="large"
+    >
       {error && (
         <div className="error-message">
           {error}
@@ -219,7 +239,8 @@ const CreateProgress = () => {
         <div className="form-actions">
           <button 
             type="button" 
-            onClick={() => navigate('/progress')}
+            onClick={handleClose}
+            disabled={loading}
             className="btn-secondary"
           >
             Cancelar
@@ -229,11 +250,16 @@ const CreateProgress = () => {
             disabled={loading}
             className="btn-primary"
           >
-            {loading ? 'Registrando Avance...' : 'Registrar Avance'}
+            {loading ? (
+              <>
+                <LoadingSpinner size="small" />
+                Registrando Avance...
+              </>
+            ) : 'Registrar Avance'}
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 };
 

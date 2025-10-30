@@ -4,8 +4,8 @@ import { planningService } from '../../services/planningService';
 import { progressService } from '../../services/progressService';
 import { evidenceService } from '../../services/evidenceService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import '../../styles/evidence-styles.css';
-
+import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import './styles/dashboard.css';
 
 const ProfessorDashboard = () => {
   const [stats, setStats] = useState({
@@ -108,6 +108,11 @@ const ProfessorDashboard = () => {
           <p className="stat-number">{stats.averageProgress}%</p>
           <Link to="/progress" className="stat-link">Ver avances</Link>
         </div>
+      </div>
+
+      {/* Calendario */}
+      <div className="dashboard-section">
+        <CalendarWidget />
       </div>
 
       {/* Acciones rápidas */}

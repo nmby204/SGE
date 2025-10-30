@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { planningService } from '../../services/planningService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import CreatePlanning from './CreatePlanning'; // Importamos el componente CreatePlanning
+import './styles/planning.css';
 
 const PlanningList = () => {
   const [plannings, setPlannings] = useState([]);
@@ -12,6 +14,7 @@ const PlanningList = () => {
     partial: '',
     cycle: ''
   });
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const { user, hasRole } = useAuth();
 
   useEffect(() => {
@@ -37,6 +40,12 @@ const PlanningList = () => {
     }));
   };
 
+  const handleCreateSuccess = (newPlanning) => {
+    // Recargar la lista después de crear una nueva planeación
+    loadPlannings();
+    setShowCreateModal(false);
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       pending: { class: 'status-pending', text: 'Pendiente' },
@@ -59,9 +68,12 @@ const PlanningList = () => {
       <div className="page-header">
         <h1>Planeaciones Didácticas</h1>
         {hasRole('professor') && (
-          <Link to="/planning/create" className="btn-primary">
+          <button 
+            onClick={() => setShowCreateModal(true)} 
+            className="btn-primary"
+          >
             Nueva Planeación
-          </Link>
+          </button>
         )}
       </div>
 
@@ -151,13 +163,23 @@ const PlanningList = () => {
           <div className="empty-state">
             <p>No se encontraron planeaciones</p>
             {hasRole('professor') && (
-              <Link to="/planning/create" className="btn-primary">
+              <button 
+                onClick={() => setShowCreateModal(true)} 
+                className="btn-primary"
+              >
                 Crear primera planeación
-              </Link>
+              </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Modal de creación de planeación */}
+      <CreatePlanning 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

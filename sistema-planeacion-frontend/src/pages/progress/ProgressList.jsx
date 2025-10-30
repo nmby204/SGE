@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { progressService } from '../../services/progressService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import CreateProgress from './CreateProgress';
+import './styles/progress.css';
 
 const ProgressList = () => {
   const [progress, setProgress] = useState([]);
@@ -12,6 +14,7 @@ const ProgressList = () => {
     partial: '',
     courseId: ''
   });
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const { hasRole } = useAuth();
 
   useEffect(() => {
@@ -21,7 +24,7 @@ const ProgressList = () => {
   const loadProgressData = async () => {
     try {
       const [progressData, statsData] = await Promise.all([
-        progressService.getProgressStats(filters), // Esto debería devolver lista de avances
+        progressService.getProgressStats(filters),
         progressService.getProgressStats(filters)
       ]);
       
@@ -39,6 +42,11 @@ const ProgressList = () => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleCreateSuccess = (newProgress) => {
+    loadProgressData();
+    setShowCreateModal(false);
   };
 
   const getStatusBadge = (status) => {
@@ -60,9 +68,12 @@ const ProgressList = () => {
     <div className="progress-list">
       <div className="page-header">
         <h1>Avances Parciales</h1>
-        <Link to="/progress/create" className="btn-primary">
+        <button 
+          onClick={() => setShowCreateModal(true)} 
+          className="btn-primary"
+        >
           Registrar Avance
-        </Link>
+        </button>
       </div>
 
       {/* Estadísticas rápidas */}
@@ -157,12 +168,22 @@ const ProgressList = () => {
         ) : (
           <div className="empty-state">
             <p>No se encontraron avances registrados</p>
-            <Link to="/progress/create" className="btn-primary">
+            <button 
+              onClick={() => setShowCreateModal(true)} 
+              className="btn-primary"
+            >
               Registrar primer avance
-            </Link>
+            </button>
           </div>
         )}
       </div>
+
+      {/* Modal de creación de avance */}
+      <CreateProgress 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

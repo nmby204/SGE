@@ -4,7 +4,6 @@ import AdminDashboard from './AdminDashboard';
 import CoordinatorDashboard from './CoordinatorDashboard';
 import ProfessorDashboard from './ProfessorDashboard';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import '../../styles/evidence-styles.css';
 
 
 const Dashboard = () => {

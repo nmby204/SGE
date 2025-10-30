@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { planningService } from '../../services/planningService';
 import { driveService } from '../../services/driveService';
 import FileUpload from '../../components/Common/FileUpload';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import Modal from '../../components/Common/Modal';
+import './styles/planning.css';
 
-const CreatePlanning = () => {
+const CreatePlanning = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     courseName: '',
     partial: '',
@@ -21,7 +22,30 @@ const CreatePlanning = () => {
   const [error, setError] = useState('');
   const [useGoogleDrive, setUseGoogleDrive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const navigate = useNavigate();
+
+  // Reset form cuando se abre/cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setFormData({
+      courseName: '',
+      partial: '',
+      cycle: '2024-2025',
+      content: '',
+      objectives: '',
+      methodology: '',
+      evaluation: '',
+      resources: ''
+    });
+    setFile(null);
+    setUseGoogleDrive(false);
+    setError('');
+    setUploadProgress(0);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,7 +65,6 @@ const CreatePlanning = () => {
     setError('');
     setUploadProgress(0);
 
-    // ✅ DEBUG DETALLADO DEL FRONTEND
     console.log('=== FRONTEND DEBUG ===');
     console.log('📁 File:', file);
     console.log('✅ useGoogleDrive:', useGoogleDrive);
@@ -113,7 +136,9 @@ const CreatePlanning = () => {
       console.log('✅ Respuesta del backend:', result);
       
       alert('Planeación creada exitosamente');
-      navigate('/planning');
+      onSuccess?.(result);
+      onClose?.();
+      
     } catch (error) {
       console.error('❌ Error final:', error);
       console.error('Error response:', error.response?.data);
@@ -124,15 +149,19 @@ const CreatePlanning = () => {
     }
   };
 
-  return (
-    <div className="create-planning">
-      <div className="page-header">
-        <h1>Crear Nueva Planeación Didáctica</h1>
-        <button onClick={() => navigate('/planning')} className="btn-secondary">
-          Volver a Planeaciones
-        </button>
-      </div>
+  const handleClose = () => {
+    if (!loading) {
+      onClose?.();
+    }
+  };
 
+  return (
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose}
+      title="Crear Nueva Planeación Didáctica"
+      size="xlarge"
+    >
       {error && (
         <div className="error-message">
           {error}
@@ -208,7 +237,7 @@ const CreatePlanning = () => {
             value={formData.content}
             onChange={handleChange}
             required
-            rows="4"
+            rows="3"
             placeholder="Describa el contenido temático de la planeación..."
           />
         </div>
@@ -221,7 +250,7 @@ const CreatePlanning = () => {
             value={formData.objectives}
             onChange={handleChange}
             required
-            rows="4"
+            rows="3"
             placeholder="Establezca los objetivos de aprendizaje..."
           />
         </div>
@@ -234,7 +263,7 @@ const CreatePlanning = () => {
             value={formData.methodology}
             onChange={handleChange}
             required
-            rows="4"
+            rows="3"
             placeholder="Describa la metodología de enseñanza..."
           />
         </div>
@@ -247,7 +276,7 @@ const CreatePlanning = () => {
             value={formData.evaluation}
             onChange={handleChange}
             required
-            rows="4"
+            rows="3"
             placeholder="Describa las estrategias de evaluación..."
           />
         </div>
@@ -259,7 +288,7 @@ const CreatePlanning = () => {
             name="resources"
             value={formData.resources}
             onChange={handleChange}
-            rows="3"
+            rows="2"
             placeholder="Liste los recursos didácticos a utilizar..."
           />
         </div>
@@ -301,7 +330,8 @@ const CreatePlanning = () => {
         <div className="form-actions">
           <button 
             type="button" 
-            onClick={() => navigate('/planning')}
+            onClick={handleClose}
+            disabled={loading}
             className="btn-secondary"
           >
             Cancelar
@@ -321,23 +351,8 @@ const CreatePlanning = () => {
         </div>
       </form>
 
-      {/* ✅ Debug info visible en desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="debug-info" style={{
-          marginTop: '20px',
-          padding: '10px',
-          background: '#f5f5f5',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          fontSize: '12px'
-        }}>
-          <strong>🔧 Debug Info:</strong>
-          <div>Archivo seleccionado: {file ? file.name : 'Ninguno'}</div>
-          <div>Google Drive: {useGoogleDrive ? '✅ Activado' : '❌ Desactivado'}</div>
-          <div>Estado: {loading ? '⏳ Cargando...' : '✅ Listo'}</div>
-        </div>
-      )}
-    </div>
+      
+    </Modal>
   );
 };
 
