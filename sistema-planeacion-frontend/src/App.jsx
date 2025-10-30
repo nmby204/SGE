@@ -36,60 +36,42 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   return children;
 };
 
+// Componente para redirección inicial
+const RootRedirect = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  // Si está autenticado, redirigir al dashboard
+  return <Navigate to="/dashboard" />;
+};
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="App">
           <Routes>
+            {/* Ruta raíz - redirige según autenticación */}
+            <Route path="/" element={<RootRedirect />} />
+            
             {/* Rutas públicas */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
-            {/* Rutas protegidas */}
-            <Route path="/" element={
+            {/* Rutas protegidas con layout */}
+            <Route path="/*" element={
               <ProtectedRoute>
                 <LayoutWrapper />
               </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/dashboard" />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              
-              {/* Planeaciones */}
-              <Route path="planning" element={<PlanningList />} />
-              <Route path="planning/create" element={
-                <ProtectedRoute roles={['professor']}>
-                  <CreatePlanning />
-                </ProtectedRoute>
-              } />
-              <Route path="planning/:id" element={<PlanningDetail />} />
-              
-              {/* Avances */}
-              <Route path="progress" element={<ProgressList />} />
-              <Route path="progress/create" element={<CreateProgress />} />
-              
-              {/* Evidencias */}
-              <Route path="evidence" element={<EvidenceList />} />
-              <Route path="evidence/create" element={
-                <ProtectedRoute roles={['professor']}>
-                  <CreateEvidence />
-                </ProtectedRoute>
-              } />
-              
-              {/* Reportes */}
-              <Route path="reports" element={
-                <ProtectedRoute roles={['admin', 'coordinator']}>
-                  <ReportsDashboard />
-                </ProtectedRoute>
-              } />
-              
-              {/* Usuarios */}
-              <Route path="users" element={
-                <ProtectedRoute roles={['admin', 'coordinator']}>
-                  <UserList />
-                </ProtectedRoute>
-              } />
-            </Route>
+            } />
           </Routes>
         </div>
       </Router>
@@ -106,15 +88,44 @@ const LayoutWrapper = () => {
       <main className="main-content">
         <Routes>
           <Route path="dashboard" element={<Dashboard />} />
+          
+          {/* Planeaciones */}
           <Route path="planning" element={<PlanningList />} />
-          <Route path="planning/create" element={<CreatePlanning />} />
+          <Route path="planning/create" element={
+            <ProtectedRoute roles={['professor']}>
+              <CreatePlanning />
+            </ProtectedRoute>
+          } />
           <Route path="planning/:id" element={<PlanningDetail />} />
+          
+          {/* Avances */}
           <Route path="progress" element={<ProgressList />} />
           <Route path="progress/create" element={<CreateProgress />} />
+          
+          {/* Evidencias */}
           <Route path="evidence" element={<EvidenceList />} />
-          <Route path="evidence/create" element={<CreateEvidence />} />
-          <Route path="reports" element={<ReportsDashboard />} />
-          <Route path="users" element={<UserList />} />
+          <Route path="evidence/create" element={
+            <ProtectedRoute roles={['professor']}>
+              <CreateEvidence />
+            </ProtectedRoute>
+          } />
+          
+          {/* Reportes */}
+          <Route path="reports" element={
+            <ProtectedRoute roles={['admin', 'coordinator']}>
+              <ReportsDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Usuarios */}
+          <Route path="users" element={
+            <ProtectedRoute roles={['admin', 'coordinator']}>
+              <UserList />
+            </ProtectedRoute>
+          } />
+          
+          {/* Ruta por defecto para rutas no encontradas dentro del layout */}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
     </div>

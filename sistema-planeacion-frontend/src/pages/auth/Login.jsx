@@ -86,9 +86,7 @@ const Login = () => {
         </form>
 
         <div className="auth-links">
-          <p>
-            ¿Eres administrador? <Link to="/register">Registrar nuevo usuario</Link>
-          </p>
+          
         </div>
       </div>
     </div>
