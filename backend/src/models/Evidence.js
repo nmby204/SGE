@@ -1,3 +1,5 @@
+const { DataTypes } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   const Evidence = sequelize.define('Evidence', {
     id: {
@@ -36,6 +38,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
       field: 'is_active'
+    },
+    // ✅ NUEVOS CAMPOS PARA CALENDARIO
+    reviewDeadline: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'review_deadline'
+    },
+    reminderSent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'reminder_sent'
     }
   }, {
     tableName: 'evidences',

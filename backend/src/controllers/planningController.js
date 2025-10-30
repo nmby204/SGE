@@ -1,6 +1,7 @@
 const { DidacticPlanning, User, PartialProgress } = require('../models');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
+const calendarNotificationService = require('../services/calendarNotificationService');
 
 const createPlanning = async (req, res) => {
   try {
@@ -20,7 +21,6 @@ const createPlanning = async (req, res) => {
     const isGoogleDrive = req.body.driveFileId && req.body.fileUrl;
 
     if (isGoogleDrive) {
-      // ✅ GOOGLE DRIVE
       console.log('☁️ Usando Google Drive para almacenamiento');
       fileData = {
         fileUrl: req.body.fileUrl,
@@ -29,7 +29,6 @@ const createPlanning = async (req, res) => {
         storageType: 'google_drive'
       };
     } else if (req.file) {
-      // ✅ ALMACENAMIENTO LOCAL
       console.log('📂 Usando almacenamiento local');
       fileData = {
         fileUrl: req.file.path,
@@ -43,7 +42,9 @@ const createPlanning = async (req, res) => {
     const planningData = {
       ...req.body,
       professorId: req.user.id,
-      ...fileData
+      ...fileData,
+      // ✅ AGREGAR FECHA DE REVISIÓN AUTOMÁTICA (7 días después)
+      reviewDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     };
 
     // Asegurarnos de que no haya courseId
@@ -66,6 +67,9 @@ const createPlanning = async (req, res) => {
         { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ]
     });
+
+    // ✅ CREAR EVENTO DE CALENDARIO AUTOMÁTICO
+    await calendarNotificationService.createPlanningEvent(newPlanning, req.user);
 
     res.status(201).json(newPlanning);
 
@@ -309,6 +313,9 @@ const reviewPlanning = async (req, res) => {
         { model: User, as: 'professor', attributes: ['id', 'name', 'email'] }
       ]
     });
+
+    // ✅ CREAR EVENTO DE REVISIÓN
+    await calendarNotificationService.createReviewEvent(updatedPlanning, updatedPlanning.professor, req.user);
 
     console.log('✅ Planeación revisada exitosamente');
     res.json(updatedPlanning);

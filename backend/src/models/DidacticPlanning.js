@@ -1,3 +1,5 @@
+const { DataTypes } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   const DidacticPlanning = sequelize.define('DidacticPlanning', {
     id: {
@@ -71,6 +73,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
       field: 'is_active'
+    },
+    // ✅ NUEVOS CAMPOS PARA CALENDARIO
+    submissionDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'submission_date'
+    },
+    reviewDeadline: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'review_deadline'
+    },
+    nextReviewDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'next_review_date'
     }
   }, {
     tableName: 'didactic_plannings',
