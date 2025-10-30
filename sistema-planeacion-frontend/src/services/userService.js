@@ -24,6 +24,12 @@ export const userService = {
     return response.data;
   },
 
+  // Crear nuevo usuario (FUNCIÓN FALTANTE)
+  createUser: async (userData) => {
+    const response = await api.post('/users', userData);
+    return response.data;
+  },
+
   // Actualizar usuario
   updateUser: async (id, userData) => {
     const response = await api.put(`/users/${id}`, userData);
