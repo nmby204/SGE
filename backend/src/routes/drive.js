@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
-const { driveController } = require('../controllers/driveController');
+// ✅ CORREGIDO: Importar sin destructuring
+const driveController = require('../controllers/driveController');
 
 const router = express.Router();
 const upload = multer({ 

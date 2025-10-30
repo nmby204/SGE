@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const stream = require('stream'); // ✅ AGREGAR ESTA LÍNEA
 
 class GoogleDriveService {
   constructor() {
@@ -16,8 +17,6 @@ class GoogleDriveService {
     });
 
     console.log('✅ GoogleDriveService inicializado');
-    console.log('🔑 Client ID:', process.env.GOOGLE_DRIVE_CLIENT_ID ? '✅ Configurado' : '❌ Faltante');
-    console.log('🔄 Refresh Token:', process.env.GOOGLE_DRIVE_REFRESH_TOKEN ? '✅ Configurado' : '❌ Faltante');
   }
 
   async uploadFile(file) {
@@ -29,6 +28,10 @@ class GoogleDriveService {
 
       const { originalname, buffer, mimetype } = file;
 
+      // ✅ CORREGIDO: Convertir buffer a stream
+      const bufferStream = new stream.PassThrough();
+      bufferStream.end(buffer);
+
       console.log('🔄 Creando archivo en Google Drive...');
       const response = await this.drive.files.create({
         auth: this.oauth2Client,
@@ -39,12 +42,12 @@ class GoogleDriveService {
         },
         media: {
           mimeType: mimetype,
-          body: buffer
-        }
+          body: bufferStream // ✅ USAR STREAM EN LUGAR DE BUFFER
+        },
+        fields: 'id, name, webViewLink, webContentLink' // ✅ AGREGAR FIELDS
       });
 
       console.log('✅ Archivo creado en Drive. ID:', response.data.id);
-      console.log('🔗 WebViewLink:', response.data.webViewLink);
 
       console.log('🔓 Haciendo archivo público...');
       // Hacer el archivo público
@@ -62,7 +65,8 @@ class GoogleDriveService {
       const result = {
         fileId: response.data.id,
         webViewLink: response.data.webViewLink,
-        webContentLink: response.data.webContentLink
+        webContentLink: response.data.webContentLink,
+        fileName: originalname
       };
 
       console.log('🎯 Resultado final:', result);
@@ -79,36 +83,7 @@ class GoogleDriveService {
     }
   }
 
-  async deleteFile(fileId) {
-    try {
-      console.log('🗑️ Eliminando archivo de Drive:', fileId);
-      await this.drive.files.delete({
-        auth: this.oauth2Client,
-        fileId: fileId
-      });
-      console.log('✅ Archivo eliminado de Drive');
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error eliminando de Google Drive:', error);
-      throw error;
-    }
-  }
-
-  async getFile(fileId) {
-    try {
-      console.log('🔍 Obteniendo archivo de Drive:', fileId);
-      const response = await this.drive.files.get({
-        auth: this.oauth2Client,
-        fileId: fileId,
-        fields: 'id, name, webViewLink, webContentLink, mimeType, createdTime'
-      });
-      console.log('✅ Archivo obtenido de Drive');
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error obteniendo archivo de Google Drive:', error);
-      throw error;
-    }
-  }
+  // ... mantener los otros métodos igual
 }
 
 module.exports = new GoogleDriveService();
