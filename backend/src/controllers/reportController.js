@@ -1,12 +1,11 @@
-const { DidacticPlanning, PartialProgress, Evidence, User, Course } = require('../models');
+const { DidacticPlanning, PartialProgress, Evidence, User } = require('../models');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit');
 
 const getPlanningCompliance = async (req, res) => {
   try {
     const { cycle, partial } = req.query;
-    const where = {};
+    const where = { isActive: true };
 
     if (cycle) where.cycle = cycle;
     if (partial) where.partial = parseInt(partial);
@@ -14,8 +13,11 @@ const getPlanningCompliance = async (req, res) => {
     const plannings = await DidacticPlanning.findAll({
       where,
       include: [
-        { model: User, as: 'professor', attributes: ['id', 'name'] },
-        { model: Course, as: 'course' }
+        { 
+          model: User, 
+          as: 'professor', 
+          attributes: ['id', 'name'] 
+        }
       ]
     });
 
@@ -25,7 +27,7 @@ const getPlanningCompliance = async (req, res) => {
       pending: plannings.filter(p => p.status === 'pending').length,
       adjustments_required: plannings.filter(p => p.status === 'adjustments_required').length,
       complianceRate: plannings.length > 0 ? 
-        (plannings.filter(p => p.status === 'approved').length / plannings.length) * 100 : 0
+        Math.round((plannings.filter(p => p.status === 'approved').length / plannings.length) * 100) : 0
     };
 
     res.json(compliance);
@@ -37,8 +39,8 @@ const getPlanningCompliance = async (req, res) => {
 
 const getPartialProgressReport = async (req, res) => {
   try {
-    const { partial, courseId } = req.query;
-    const where = {};
+    const { partial } = req.query;
+    const where = { isActive: true };
 
     if (partial) where.partial = parseInt(partial);
 
@@ -47,10 +49,12 @@ const getPartialProgressReport = async (req, res) => {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        where: courseId ? { courseId } : {},
         include: [
-          { model: User, as: 'professor', attributes: ['id', 'name'] },
-          { model: Course, as: 'course' }
+          { 
+            model: User, 
+            as: 'professor', 
+            attributes: ['id', 'name'] 
+          }
         ]
       }]
     });
@@ -63,8 +67,7 @@ const getPartialProgressReport = async (req, res) => {
         partial: progress.filter(p => p.status === 'partial').length,
         unfulfilled: progress.filter(p => p.status === 'unfulfilled').length
       },
-      byProfessor: {},
-      byCourse: {}
+      byProfessor: {}
     };
 
     // Group by professor
@@ -84,7 +87,8 @@ const getPartialProgressReport = async (req, res) => {
 
     // Calculate averages
     Object.keys(report.byProfessor).forEach(professor => {
-      report.byProfessor[professor].averageProgress /= report.byProfessor[professor].total;
+      report.byProfessor[professor].averageProgress = 
+        Math.round(report.byProfessor[professor].averageProgress / report.byProfessor[professor].total);
     });
 
     res.json(report);
@@ -97,7 +101,7 @@ const getPartialProgressReport = async (req, res) => {
 const getTrainingCoursesReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    const where = { status: 'approved' };
+    const where = { status: 'approved', isActive: true };
 
     if (startDate && endDate) {
       where.date = {
@@ -175,10 +179,12 @@ const exportToExcel = async (req, res) => {
     const worksheet = workbook.addWorksheet('Reporte');
 
     // Add headers and data based on report type
-    worksheet.addRow(Object.keys(data[0] || {}));
-    data.forEach(row => {
-      worksheet.addRow(Object.values(row));
-    });
+    if (data.length > 0) {
+      worksheet.addRow(Object.keys(data[0]));
+      data.forEach(row => {
+        worksheet.addRow(Object.values(row));
+      });
+    }
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=reporte.xlsx');
@@ -193,18 +199,69 @@ const exportToExcel = async (req, res) => {
 
 // Helper functions for Excel export
 async function getPlanningComplianceData(filters) {
-  // Implementation for planning compliance data
-  return [];
+  const where = { isActive: true };
+  if (filters.cycle) where.cycle = filters.cycle;
+  if (filters.partial) where.partial = parseInt(filters.partial);
+
+  const plannings = await DidacticPlanning.findAll({
+    where,
+    include: [{ model: User, as: 'professor' }]
+  });
+
+  return plannings.map(p => ({
+    'Curso': p.courseName,
+    'Profesor': p.professor.name,
+    'Ciclo': p.cycle,
+    'Parcial': p.partial,
+    'Estado': p.status,
+    'Fecha Creación': p.createdAt
+  }));
 }
 
 async function getProgressReportData(filters) {
-  // Implementation for progress report data
-  return [];
+  const where = { isActive: true };
+  if (filters.partial) where.partial = parseInt(filters.partial);
+
+  const progress = await PartialProgress.findAll({
+    where,
+    include: [{
+      model: DidacticPlanning,
+      as: 'planning',
+      include: [{ model: User, as: 'professor' }]
+    }]
+  });
+
+  return progress.map(p => ({
+    'Curso': p.planning.courseName,
+    'Profesor': p.planning.professor.name,
+    'Parcial': p.partial,
+    'Progreso': `${p.progressPercentage}%`,
+    'Estado': p.status,
+    'Logros': p.achievements
+  }));
 }
 
 async function getTrainingReportData(filters) {
-  // Implementation for training report data
-  return [];
+  const where = { status: 'approved', isActive: true };
+  if (filters.startDate && filters.endDate) {
+    where.date = {
+      [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
+    };
+  }
+
+  const evidences = await Evidence.findAll({
+    where,
+    include: [{ model: User, as: 'professor' }]
+  });
+
+  return evidences.map(e => ({
+    'Curso': e.courseName,
+    'Profesor': e.professor.name,
+    'Institución': e.institution,
+    'Fecha': e.date,
+    'Horas': e.hours,
+    'Estado': e.status
+  }));
 }
 
 module.exports = {

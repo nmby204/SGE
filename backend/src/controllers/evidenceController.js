@@ -1,5 +1,6 @@
 const { Evidence, User } = require('../models');
 const { validationResult } = require('express-validator');
+const calendarNotificationService = require('../services/calendarNotificationService');
 
 const createEvidence = async (req, res) => {
   try {
@@ -15,7 +16,9 @@ const createEvidence = async (req, res) => {
     const evidenceData = {
       ...req.body,
       professorId: req.user.id,
-      fileUrl: req.file.path
+      fileUrl: req.file.path,
+      // ✅ AGREGAR FECHA DE REVISIÓN AUTOMÁTICA (3 días después)
+      reviewDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
     };
 
     const evidence = await Evidence.create(evidenceData);
@@ -28,6 +31,9 @@ const createEvidence = async (req, res) => {
       }]
     });
 
+    // ✅ CREAR EVENTO DE CALENDARIO AUTOMÁTICO
+    await calendarNotificationService.createEvidenceEvent(newEvidence, req.user);
+
     res.status(201).json(newEvidence);
   } catch (error) {
     console.error('Create evidence error:', error);
@@ -38,7 +44,7 @@ const createEvidence = async (req, res) => {
 const getEvidences = async (req, res) => {
   try {
     const { status } = req.query;
-    const where = {};
+    const where = { isActive: true };
 
     if (status) where.status = status;
 
@@ -175,7 +181,9 @@ const deleteEvidence = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this evidence' });
     }
 
-    await evidence.destroy();
+    // Soft delete
+    await evidence.update({ isActive: false });
+
     res.json({ message: 'Evidence deleted successfully' });
   } catch (error) {
     console.error('Delete evidence error:', error);

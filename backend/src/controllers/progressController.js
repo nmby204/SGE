@@ -1,5 +1,6 @@
 const { PartialProgress, DidacticPlanning, User } = require('../models');
 const { validationResult } = require('express-validator');
+const calendarNotificationService = require('../services/calendarNotificationService');
 
 const createProgress = async (req, res) => {
   try {
@@ -18,15 +19,24 @@ const createProgress = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to add progress to this planning' });
     }
 
-    const progress = await PartialProgress.create(req.body);
+    const progressData = {
+      ...req.body,
+      // ✅ AGREGAR FECHA DE PRÓXIMO CHECKPOINT (15 días después)
+      nextCheckpoint: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+    };
+
+    const progress = await PartialProgress.create(progressData);
     
     const newProgress = await PartialProgress.findByPk(progress.id, {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['professor'] // QUITAR 'course'
+        include: ['professor']
       }]
     });
+
+    // ✅ CREAR EVENTO DE CALENDARIO AUTOMÁTICO
+    await calendarNotificationService.createProgressEvent(newProgress, planning, req.user);
 
     res.status(201).json(newProgress);
   } catch (error) {
@@ -40,11 +50,11 @@ const getProgressByPlanning = async (req, res) => {
     const { planningId } = req.params;
 
     const progress = await PartialProgress.findAll({
-      where: { planningId },
+      where: { planningId, isActive: true },
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['professor'] // QUITAR 'course'
+        include: ['professor']
       }],
       order: [['partial', 'ASC']]
     });
@@ -58,22 +68,17 @@ const getProgressByPlanning = async (req, res) => {
 
 const getProgressStats = async (req, res) => {
   try {
-    const { partial, courseId } = req.query;
-    const where = {};
+    const { partial } = req.query;
+    const where = { isActive: true };
 
     if (partial) where.partial = parseInt(partial);
-
-    // QUITAR courseId del where clause ya que no existe más
-    const planningWhere = {};
-    // if (courseId) planningWhere.courseId = courseId; // ELIMINAR esta línea
 
     const progress = await PartialProgress.findAll({
       where,
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        where: planningWhere,
-        include: ['professor'] // QUITAR 'course'
+        include: ['professor']
       }]
     });
 
@@ -122,7 +127,7 @@ const updateProgress = async (req, res) => {
       include: [{
         model: DidacticPlanning,
         as: 'planning',
-        include: ['professor'] // QUITAR 'course'
+        include: ['professor']
       }]
     });
 

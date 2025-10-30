@@ -1,6 +1,6 @@
 const express = require('express');
 const { auth } = require('../middlewares/auth');
-const { calendarController } = require('../controllers/calendarController');
+const calendarController = require('../controllers/calendarController');
 const router = express.Router();
 
 // Todas las rutas protegidas
@@ -32,7 +32,7 @@ router.post('/events', calendarController.createEvent);
  * @swagger
  * /calendar/events/upcoming:
  *   get:
- *     summary: Obtener eventos próximos
+ *     summary: Obtener eventos próximos (datos reales de BD)
  *     tags: [Calendar]
  *     security:
  *       - bearerAuth: []
@@ -45,11 +45,63 @@ router.post('/events', calendarController.createEvent);
  *         description: Número máximo de eventos a retornar
  *     responses:
  *       200:
- *         description: Lista de eventos próximos
+ *         description: Lista de eventos próximos de la base de datos
  *       500:
  *         description: Error del servidor
  */
 router.get('/events/upcoming', calendarController.getUpcomingEvents);
+
+/**
+ * @swagger
+ * /calendar/events/system:
+ *   get:
+ *     summary: Obtener solo eventos del sistema (datos reales)
+ *     tags: [Calendar]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: maxResults
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Número máximo de eventos a retornar
+ *     responses:
+ *       200:
+ *         description: Lista de eventos del sistema
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/events/system', calendarController.getSystemEvents);
+
+/**
+ * @swagger
+ * /calendar/events/filter:
+ *   get:
+ *     summary: Obtener eventos filtrados por tipo
+ *     tags: [Calendar]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [planning, evidence, progress]
+ *         description: Tipo de evento a filtrar
+ *       - in: query
+ *         name: maxResults
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Número máximo de eventos a retornar
+ *     responses:
+ *       200:
+ *         description: Lista de eventos filtrados
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/events/filter', calendarController.getEventsByType);
 
 /**
  * @swagger

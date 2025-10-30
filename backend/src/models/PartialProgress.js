@@ -1,3 +1,5 @@
+const { DataTypes } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   const PartialProgress = sequelize.define('PartialProgress', {
     id: {
@@ -48,6 +50,17 @@ module.exports = (sequelize, DataTypes) => {
         model: 'didactic_plannings',
         key: 'id'
       }
+    },
+    // ✅ NUEVOS CAMPOS PARA CALENDARIO
+    dueDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'due_date'
+    },
+    nextCheckpoint: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'next_checkpoint'
     }
   }, {
     tableName: 'partial_progress',

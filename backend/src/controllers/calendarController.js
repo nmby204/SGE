@@ -1,56 +1,29 @@
-const { google } = require('googleapis');
+const calendarService = require('../services/calendarService');
+const calendarNotificationService = require('../services/calendarNotificationService');
 
 const calendarController = {
   createEvent: async (req, res) => {
     try {
-      const { summary, description, start, end, location, attendees, reminders } = req.body;
+      const { summary, description, start, end, location, attendees, reminders, type } = req.body;
 
-      // Configurar OAuth2 (usar el token del usuario)
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CALENDAR_CLIENT_ID,
-        process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-        process.env.GOOGLE_CALENDAR_REDIRECT_URI
+      console.log('📅 Creando evento:', { summary, start, end, type });
+
+      const result = await calendarService.createEvent(
+        { summary, description, start, end, location, attendees, reminders, type },
+        req.user?.calendarAccessToken
       );
 
-      // En una implementación real, usarías el token del usuario
-      oauth2Client.setCredentials({
-        access_token: req.user.calendarAccessToken // Asumiendo que guardas el token
-      });
-
-      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-      const event = {
-        summary,
-        description,
-        start: {
-          dateTime: new Date(start).toISOString(),
-          timeZone: 'America/Mexico_City',
-        },
-        end: {
-          dateTime: new Date(end).toISOString(),
-          timeZone: 'America/Mexico_City',
-        },
-        location,
-        attendees: attendees || [],
-        reminders: reminders || {
-          useDefault: true
-        }
-      };
-
-      const response = await calendar.events.insert({
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        resource: event,
-      });
+      console.log('✅ Evento creado:', result.source);
 
       res.status(201).json({
-        message: 'Evento creado exitosamente',
-        event: response.data
+        message: `Evento creado exitosamente (${result.source})`,
+        event: result.event
       });
 
     } catch (error) {
-      console.error('Error creando evento en Calendar:', error);
+      console.error('❌ Error en createEvent:', error);
       res.status(500).json({ 
-        message: 'Error creando evento en calendario',
+        message: 'Error creando evento',
         error: error.message 
       });
     }
@@ -58,36 +31,30 @@ const calendarController = {
 
   getUpcomingEvents: async (req, res) => {
     try {
-      const { maxResults = 10 } = req.query;
+      const { maxResults = 10, includeSystemEvents = true } = req.query;
 
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CALENDAR_CLIENT_ID,
-        process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-        process.env.GOOGLE_CALENDAR_REDIRECT_URI
+      console.log('📅 Obteniendo eventos próximos');
+
+      // Obtener eventos de la base de datos (reales)
+      const calendarResult = await calendarService.getUpcomingEvents(
+        parseInt(maxResults),
+        req.user?.calendarAccessToken,
+        req.user // ← Pasar el usuario para obtener datos reales
       );
 
-      oauth2Client.setCredentials({
-        access_token: req.user.calendarAccessToken
-      });
+      let response = {
+        source: calendarResult.source,
+        events: calendarResult.events
+      };
 
-      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+      console.log('✅ Eventos obtenidos:', response.events.length);
 
-      const response = await calendar.events.list({
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        timeMin: new Date().toISOString(),
-        maxResults: parseInt(maxResults),
-        singleEvents: true,
-        orderBy: 'startTime',
-      });
-
-      res.json({
-        events: response.data.items
-      });
+      res.json(response);
 
     } catch (error) {
-      console.error('Error obteniendo eventos:', error);
+      console.error('❌ Error en getUpcomingEvents:', error);
       res.status(500).json({ 
-        message: 'Error obteniendo eventos del calendario',
+        message: 'Error obteniendo eventos',
         error: error.message 
       });
     }
@@ -97,29 +64,82 @@ const calendarController = {
     try {
       const { eventId } = req.params;
 
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CALENDAR_CLIENT_ID,
-        process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-        process.env.GOOGLE_CALENDAR_REDIRECT_URI
+      console.log('📅 Eliminando evento:', eventId);
+
+      const result = await calendarService.deleteEvent(
+        eventId,
+        req.user?.calendarAccessToken
       );
 
-      oauth2Client.setCredentials({
-        access_token: req.user.calendarAccessToken
+      console.log('✅ Evento eliminado:', result.source);
+
+      res.json({ 
+        message: `Evento eliminado exitosamente (${result.source})`,
+        deleted: result.deleted
       });
-
-      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-      await calendar.events.delete({
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        eventId: eventId,
-      });
-
-      res.json({ message: 'Evento eliminado exitosamente' });
 
     } catch (error) {
-      console.error('Error eliminando evento:', error);
+      console.error('❌ Error en deleteEvent:', error);
       res.status(500).json({ 
-        message: 'Error eliminando evento del calendario',
+        message: 'Error eliminando evento',
+        error: error.message 
+      });
+    }
+  },
+
+  // ✅ NUEVA FUNCIÓN: Obtener solo eventos del sistema (datos reales)
+  getSystemEvents: async (req, res) => {
+    try {
+      const { maxResults = 10 } = req.query;
+
+      console.log('📅 Obteniendo eventos del sistema (datos reales)');
+
+      const systemEvents = await calendarNotificationService.getSystemEvents(req.user, parseInt(maxResults));
+
+      console.log('✅ Eventos del sistema obtenidos:', systemEvents.length);
+
+      res.json({
+        source: 'system',
+        events: systemEvents,
+        totalEvents: systemEvents.length
+      });
+
+    } catch (error) {
+      console.error('❌ Error en getSystemEvents:', error);
+      res.status(500).json({ 
+        message: 'Error obteniendo eventos del sistema',
+        error: error.message 
+      });
+    }
+  },
+
+  // ✅ NUEVA FUNCIÓN: Obtener eventos por tipo
+  getEventsByType: async (req, res) => {
+    try {
+      const { type, maxResults = 10 } = req.query;
+      
+      console.log(`📅 Obteniendo eventos por tipo: ${type}`);
+
+      const allEvents = await calendarNotificationService.getDatabaseEvents(req.user, 50); // Obtener más para filtrar
+      
+      const filteredEvents = type 
+        ? allEvents.filter(event => event.type === type)
+        : allEvents;
+
+      const limitedEvents = filteredEvents.slice(0, maxResults);
+
+      console.log(`✅ Eventos de tipo "${type}" obtenidos:`, limitedEvents.length);
+
+      res.json({
+        type: type || 'all',
+        events: limitedEvents,
+        totalEvents: limitedEvents.length
+      });
+
+    } catch (error) {
+      console.error('❌ Error en getEventsByType:', error);
+      res.status(500).json({ 
+        message: 'Error obteniendo eventos por tipo',
         error: error.message 
       });
     }
