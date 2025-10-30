@@ -135,9 +135,7 @@ const PlanningList = () => {
               )}
 
               <div className="planning-actions">
-                <Link to={`/planning/${planning.id}`} className="btn-secondary">
-                  Ver Detalles
-                </Link>
+               
                 
                 {canReview && planning.status === 'pending' && (
                   <Link 

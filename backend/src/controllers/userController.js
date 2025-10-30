@@ -1,12 +1,21 @@
-const { User, Course, DidacticPlanning } = require('../models');
+const { User, DidacticPlanning, Evidence } = require('../models');
 const { validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 
 const getUsers = async (req, res) => {
   try {
+    const { role, isActive } = req.query;
+    const where = {};
+
+    if (role) where.role = role;
+    if (isActive !== undefined) where.isActive = isActive === 'true';
+
     const users = await User.findAll({
       attributes: { exclude: ['password'] },
-      where: { isActive: true }
+      where,
+      order: [['createdAt', 'DESC']]
     });
+    
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
@@ -24,9 +33,14 @@ const getProfessors = async (req, res) => {
       },
       include: [{
         model: DidacticPlanning,
-        as: 'plannings'
-      }]
+        as: 'plannings',
+        attributes: ['id', 'courseName', 'partial', 'cycle', 'status', 'createdAt'],
+        where: { isActive: true },
+        required: false
+      }],
+      order: [['name', 'ASC']]
     });
+    
     res.json(professors);
   } catch (error) {
     console.error('Get professors error:', error);
@@ -38,15 +52,32 @@ const getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
       attributes: { exclude: ['password'] },
-      include: [{
-        model: DidacticPlanning,
-        as: 'plannings',
-        include: ['course']
-      }]
+      include: [
+        {
+          model: DidacticPlanning,
+          as: 'plannings',
+          attributes: ['id', 'courseName', 'partial', 'cycle', 'status', 'createdAt'],
+          where: { isActive: true },
+          required: false
+        },
+        {
+          model: Evidence,
+          as: 'evidences',
+          attributes: ['id', 'courseName', 'institution', 'date', 'hours', 'status', 'createdAt'],
+          where: { isActive: true },
+          required: false
+        }
+      ]
     });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Si no es admin y no es el propio usuario, limitar información
+    if (req.user.role !== 'admin' && req.user.id !== user.id) {
+      delete user.dataValues.plannings;
+      delete user.dataValues.evidences;
     }
 
     res.json(user);
@@ -73,17 +104,29 @@ const updateUser = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update roles' });
     }
 
+    // Verificar si el email ya existe (si se está actualizando)
+    if (req.body.email && req.body.email !== user.email) {
+      const existingUser = await User.findOne({ 
+        where: { 
+          email: req.body.email,
+          id: { [Op.ne]: req.params.id }
+        } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+    }
+
     await user.update(req.body);
+
+    // Obtener usuario actualizado sin password
+    const updatedUser = await User.findByPk(user.id, {
+      attributes: { exclude: ['password'] }
+    });
 
     res.json({
       message: 'User updated successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive
-      }
+      user: updatedUser
     });
   } catch (error) {
     console.error('Update user error:', error);
@@ -95,6 +138,11 @@ const deleteUser = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete users' });
+    }
+
+    // No permitir que un usuario se elimine a sí mismo
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({ message: 'Cannot delete your own account' });
     }
 
     const user = await User.findByPk(req.params.id);
@@ -112,10 +160,46 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Nueva función para crear usuario
+const createUser = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password, role } = req.body;
+
+    // Verificar si el email ya existe
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'professor'
+    });
+
+    // No enviar la contraseña en la respuesta
+    const userResponse = await User.findByPk(user.id, {
+      attributes: { exclude: ['password'] }
+    });
+
+    res.status(201).json(userResponse);
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getUsers,
   getProfessors,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  createUser
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/reportService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import './ReportsDashboard.css';
 
 const ReportsDashboard = () => {
   const [activeTab, setActiveTab] = useState('planning');
