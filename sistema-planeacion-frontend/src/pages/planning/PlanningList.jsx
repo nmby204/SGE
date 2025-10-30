@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { planningService } from '../../services/planningService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import CreatePlanning from './CreatePlanning'; // Importamos el componente CreatePlanning
+import CreatePlanning from './CreatePlanning';
 import './styles/planning.css';
 
 const PlanningList = () => {
@@ -41,9 +41,42 @@ const PlanningList = () => {
   };
 
   const handleCreateSuccess = (newPlanning) => {
-    // Recargar la lista después de crear una nueva planeación
     loadPlannings();
     setShowCreateModal(false);
+  };
+
+  // ✅ NUEVA FUNCIÓN: Eliminar planeación
+  const handleDeletePlanning = async (planningId) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta planeación?')) {
+      return;
+    }
+
+    try {
+      await planningService.deletePlanning(planningId);
+      alert('Planeación eliminada exitosamente');
+      loadPlannings(); // Recargar la lista
+    } catch (error) {
+      console.error('Error eliminando planeación:', error);
+      alert('Error al eliminar la planeación');
+    }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Verificar si se puede editar
+  const canEditPlanning = (planning) => {
+    // Solo el profesor dueño puede editar y solo si está pendiente
+    if (hasRole('professor') && planning.professor?.id === user?.id) {
+      return planning.status === 'pending' || planning.status === 'adjustments_required';
+    }
+    return false;
+  };
+
+  // ✅ NUEVA FUNCIÓN: Verificar si se puede eliminar
+  const canDeletePlanning = (planning) => {
+    // Solo el profesor dueño puede eliminar y solo si está aprobada
+    if (hasRole('professor') && planning.professor?.id === user?.id) {
+      return planning.status === 'approved';
+    }
+    return false;
   };
 
   const getStatusBadge = (status) => {
@@ -135,8 +168,17 @@ const PlanningList = () => {
               )}
 
               <div className="planning-actions">
-               
                 
+                {/* ✅ BOTÓN PARA ELIMINAR - Solo cuando está aprobada */}
+                {canDeletePlanning(planning) && (
+                  <button 
+                    onClick={() => handleDeletePlanning(planning.id)}
+                    className="btn-danger"
+                  >
+                    Eliminar
+                  </button>
+                )}
+
                 {canReview && planning.status === 'pending' && (
                   <Link 
                     to={`/planning/${planning.id}`} 
@@ -154,6 +196,14 @@ const PlanningList = () => {
                     Corregir
                   </Link>
                 )}
+
+                {/* Botón para ver detalles (siempre visible) */}
+                <Link 
+                  to={`/planning/${planning.id}`} 
+                  className="btn-outline"
+                >
+                  Ver Detalles
+                </Link>
               </div>
             </div>
           ))

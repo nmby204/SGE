@@ -57,6 +57,36 @@ const PlanningDetail = () => {
 
   const canReview = hasRole(['admin', 'coordinator']);
   const isOwner = planning?.professorId === user?.id;
+  
+  // ✅ NUEVA FUNCIÓN: Verificar si el profesor puede ver/registrar avances
+  const canViewProgress = () => {
+    // Admin y coordinadores siempre pueden ver
+    if (hasRole(['admin', 'coordinator'])) {
+      return true;
+    }
+    
+    // Profesores solo pueden ver si la planeación está aprobada
+    if (hasRole('professor')) {
+      return planning?.status === 'approved';
+    }
+    
+    return false;
+  };
+
+  // ✅ NUEVA FUNCIÓN: Verificar si puede registrar avances
+  const canCreateProgress = () => {
+    // Admin y coordinadores siempre pueden registrar
+    if (hasRole(['admin', 'coordinator'])) {
+      return true;
+    }
+    
+    // Profesores solo pueden registrar si la planeación está aprobada
+    if (hasRole('professor') && isOwner) {
+      return planning?.status === 'approved';
+    }
+    
+    return false;
+  };
 
   if (loading) {
     return <LoadingSpinner text="Cargando planeación..." />;
@@ -119,7 +149,7 @@ const PlanningDetail = () => {
           
           {isOwner && planning.status === 'adjustments_required' && (
             <button 
-              onClick={() => navigate(`/planning/edit/${id}`)} // Asumiendo que hay una página de edición
+              onClick={() => navigate(`/planning/edit/${id}`)}
               className="btn-primary"
             >
               Corregir Planeación
@@ -209,63 +239,92 @@ const PlanningDetail = () => {
         </div>
       )}
 
-      {/* Avances registrados */}
-      <div className="detail-section">
-        <h2>Avances Parciales</h2>
-        
-        {progress.length > 0 ? (
-          <div className="progress-list">
-            {progress.map(progressItem => (
-              <div key={progressItem.id} className="progress-item">
-                <div className="progress-header">
-                  <h3>Parcial {progressItem.partial}</h3>
-                  <div className="progress-stats">
-                    <span className="progress-percentage">
-                      {progressItem.progressPercentage}%
-                    </span>
-                    {getProgressStatusBadge(progressItem.status)}
+      {/* ✅ Avances registrados - BLOQUEADO PARA PROFESORES SI NO ESTÁ APROBADA */}
+      {canViewProgress() ? (
+        <div className="detail-section">
+          <h2>Avances Parciales</h2>
+          
+          {progress.length > 0 ? (
+            <div className="progress-list">
+              {progress.map(progressItem => (
+                <div key={progressItem.id} className="progress-item">
+                  <div className="progress-header">
+                    <h3>Parcial {progressItem.partial}</h3>
+                    <div className="progress-stats">
+                      <span className="progress-percentage">
+                        {progressItem.progressPercentage}%
+                      </span>
+                      {getProgressStatusBadge(progressItem.status)}
+                    </div>
+                  </div>
+                  
+                  <div className="progress-details">
+                    {progressItem.achievements && (
+                      <div>
+                        <strong>Logros:</strong> {progressItem.achievements}
+                      </div>
+                    )}
+                    
+                    {progressItem.challenges && (
+                      <div>
+                        <strong>Desafíos:</strong> {progressItem.challenges}
+                      </div>
+                    )}
+                    
+                    {progressItem.adjustments && (
+                      <div>
+                        <strong>Ajustes:</strong> {progressItem.adjustments}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="progress-date">
+                    Registrado el: {new Date(progressItem.createdAt).toLocaleDateString()}
                   </div>
                 </div>
-                
-                <div className="progress-details">
-                  {progressItem.achievements && (
-                    <div>
-                      <strong>Logros:</strong> {progressItem.achievements}
-                    </div>
-                  )}
-                  
-                  {progressItem.challenges && (
-                    <div>
-                      <strong>Desafíos:</strong> {progressItem.challenges}
-                    </div>
-                  )}
-                  
-                  {progressItem.adjustments && (
-                    <div>
-                      <strong>Ajustes:</strong> {progressItem.adjustments}
-                    </div>
-                  )}
+              ))}
+            </div>
+          ) : (
+            <div className="no-progress">
+              <p>No hay avances registrados para esta planeación.</p>
+              {hasRole('professor') && planning.status !== 'approved' && (
+                <div className="info-message">
+                  <p>⏳ Los avances parciales estarán disponibles una vez que la planeación sea aprobada.</p>
                 </div>
-                
-                <div className="progress-date">
-                  Registrado el: {new Date(progressItem.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>No hay avances registrados para esta planeación.</p>
-        )}
+              )}
+            </div>
+          )}
 
-        {(isOwner || hasRole(['admin', 'coordinator'])) && (
-          <button 
-            onClick={() => navigate('/progress/create', { state: { planningId: id } })}
-            className="btn-secondary"
-          >
-            Registrar Avance
-          </button>
-        )}
-      </div>
+          {canCreateProgress() && (
+            <button 
+              onClick={() => navigate('/progress', { state: { planningId: id } })}
+              className="btn-secondary"
+            >
+              Registrar Avance
+            </button>
+          )}
+        </div>
+      ) : (
+        // ✅ MOSTRAR MENSAJE CUANDO NO TIENE ACCESO
+        <div className="detail-section blocked-section">
+          <h2>Avances Parciales</h2>
+          <div className="access-denied">
+            <div className="warning-icon">⚠️</div>
+            <h3>Acceso restringido</h3>
+            <p>
+              {hasRole('professor') 
+                ? "Los avances parciales solo están disponibles para planeaciones aprobadas. Una vez que esta planeación sea revisada y aprobada, podrás registrar y ver los avances."
+                : "No tienes permisos para ver los avances parciales."
+              }
+            </p>
+            {hasRole('professor') && (
+              <div className="current-status">
+                <strong>Estado actual:</strong> {getStatusBadge(planning.status)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de revisión */}
       <Modal

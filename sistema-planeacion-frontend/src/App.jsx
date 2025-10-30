@@ -6,6 +6,7 @@ import Register from './pages/auth/Register';
 import Dashboard from './pages/dashboard/Dashboard';
 import PlanningList from './pages/planning/PlanningList';
 import CreatePlanning from './pages/planning/CreatePlanning';
+import EditPlanning from './pages/planning/EditPlanning'; // ✅ IMPORTAR EL NUEVO COMPONENTE
 import PlanningDetail from './pages/planning/PlanningDetail';
 import ProgressList from './pages/progress/ProgressList';
 import CreateProgress from './pages/progress/CreateProgress';
@@ -94,6 +95,12 @@ const LayoutWrapper = () => {
           <Route path="planning/create" element={
             <ProtectedRoute roles={['professor']}>
               <CreatePlanning />
+            </ProtectedRoute>
+          } />
+          {/* ✅ NUEVA RUTA PARA EDITAR PLANEACIONES */}
+          <Route path="planning/edit/:id" element={
+            <ProtectedRoute roles={['professor']}>
+              <EditPlanning />
             </ProtectedRoute>
           } />
           <Route path="planning/:id" element={<PlanningDetail />} />
