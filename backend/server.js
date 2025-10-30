@@ -195,11 +195,11 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
-  console.log(`📚 Swagger Docs: http://localhost:${PORT}/api-docs`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📅 Calendar API: http://localhost:${PORT}/api/calendar/events`);
-  console.log(`🌐 URL principal: http://localhost:${PORT}/`);
+  console.log(` Servidor ejecutándose en el puerto ${PORT}`);
+  console.log(` Swagger Docs: http://localhost:${PORT}/api-docs`);
+  console.log(`  Health check: http://localhost:${PORT}/api/health`);
+  console.log(` Calendar API: http://localhost:${PORT}/api/calendar/events`);
+  console.log(` URL principal: http://localhost:${PORT}/`);
 });
 
 module.exports = app;
