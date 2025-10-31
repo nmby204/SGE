@@ -15,7 +15,7 @@ router.post('/login', [
   body('password', 'Password is required').exists()
 ], login);
 
-// TEMPORAL: Permite registro sin autenticación para crear el admin inicial
+// TEMPORAL: Permite registro sin autenticación para crear el admin inic
 router.post('/register', [
   // auth,           // ← COMENTADO temporalmente
   // authorize('admin'), // ← COMENTADO temporalmente
