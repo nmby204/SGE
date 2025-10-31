@@ -1,11 +1,5 @@
-@"
 name: Security Audit
-
-on:
-  push:
-    branches: [main, develop, estrella]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
   backend-audit:
@@ -37,4 +31,3 @@ jobs:
       run: npm ci
     - name: Run npm audit
       run: npm audit --audit-level=high
-"@ | Out-File -FilePath ".github/workflows/npm-audit.yml" -Encoding UTF8
