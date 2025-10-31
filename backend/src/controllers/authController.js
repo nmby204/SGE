@@ -61,10 +61,11 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // TEMPORAL: Comentado para permitir crear primer usuario admin
     // Only admin can create coordinators and professors
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to create users' });
-    }
+    // if (req.user.role !== 'admin') {
+    //   return res.status(403).json({ message: 'Not authorized to create users' });
+    // }
 
     // Create user - la contraseña se hasheará automáticamente en el modelo
     const user = await User.create({
@@ -111,7 +112,7 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    // Check current password usando el método del modelo
+    // Check current password usando el método del 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({ message: 'Current password is incorrect' });

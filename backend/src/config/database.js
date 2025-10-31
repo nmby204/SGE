@@ -7,7 +7,14 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: 'postgres',
+    port: process.env.DB_PORT || 5432, // ← Agrega el puerto también
     logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,           // ← OBLIGATORIO para Azure
+        rejectUnauthorized: false // ← IMPORTANTE para Azure
+      }
+    },
     pool: {
       max: 5,
       min: 0,
