@@ -1,0 +1,40 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches: [main, develop, estrella]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies - Backend
+      run: npm ci
+      working-directory: ./backend
+
+    - name: Run tests with coverage - Backend
+      run: |
+        npm test -- --coverage --watchAll=false
+        npx nyc report --reporter=lcov
+      working-directory: ./backend
+
+    - name: SonarQube Scan
+      run: |
+        npx sonarqube-scanner \
+          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.login=admin \
+          -Dsonar.password=admin \
+          -Dsonar.projectKey=SGE
+      working-directory: ./backend
