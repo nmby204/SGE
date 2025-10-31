@@ -4,6 +4,7 @@ import { reportService } from '../../services/reportService';
 import { userService } from '../../services/userService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import LocationWidget from '../../components/Location/LocationWidget';
 import './styles/dashboard.css';
 
 const AdminDashboard = () => {
@@ -81,9 +82,15 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Calendario */}
-      <div className="dashboard-section">
-        <CalendarWidget />
+      {/* Calendario y Ubicación en grid */}
+      <div className="dashboard-grid">
+        <div className="dashboard-section">
+          <CalendarWidget />
+        </div>
+
+        <div className="dashboard-section">
+          <LocationWidget />
+        </div>
       </div>
 
       {/* Acciones rápidas */}
