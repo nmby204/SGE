@@ -183,7 +183,7 @@ const createUser = async (req, res) => {
       role: role || 'professor'
     });
 
-    // No enviar la contraseña en la respuesta
+    // No enviar la contraseña
     const userResponse = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] }
     });
