@@ -111,7 +111,7 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    // Check current password usando el método del modelo
+    // Check current password usando el método del 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({ message: 'Current password is incorrect' });
