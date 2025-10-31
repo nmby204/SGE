@@ -1,8 +1,9 @@
+@"
 name: Security Audit
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, estrella]
   pull_request:
     branches: [main]
 
@@ -12,18 +13,13 @@ jobs:
     defaults:
       run:
         working-directory: ./backend
-    
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: './backend/package-lock.json'
-    
     - name: Install dependencies
       run: npm ci
-    
     - name: Run npm audit
       run: npm audit --audit-level=high
 
@@ -32,17 +28,13 @@ jobs:
     defaults:
       run:
         working-directory: ./sistema-planeacion-frontend
-    
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: './sistema-planeacion-frontend/package-lock.json'
-    
     - name: Install dependencies
       run: npm ci
-    
     - name: Run npm audit
       run: npm audit --audit-level=high
+"@ | Out-File -FilePath ".github/workflows/npm-audit.yml" -Encoding UTF8
