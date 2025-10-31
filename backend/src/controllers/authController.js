@@ -61,10 +61,11 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // TEMPORAL: Comentado para permitir crear primer usuario admin
     // Only admin can create coordinators and professors
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to create users' });
-    }
+    // if (req.user.role !== 'admin') {
+    //   return res.status(403).json({ message: 'Not authorized to create users' });
+    // }
 
     // Create user - la contraseña se hasheará automáticamente en el modelo
     const user = await User.create({
