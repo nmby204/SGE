@@ -4,6 +4,7 @@ import { reportService } from '../../services/reportService';
 import { planningService } from '../../services/planningService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import LocationWidget from '../../components/Location/LocationWidget';
 import './styles/dashboard.css';
 
 const CoordinatorDashboard = () => {
@@ -86,9 +87,15 @@ const CoordinatorDashboard = () => {
         </div>
       </div>
 
-      {/* Calendario */}
-      <div className="dashboard-section">
-        <CalendarWidget />
+      {/* Calendario y Ubicación en grid */}
+      <div className="dashboard-grid">
+        <div className="dashboard-section">
+          <CalendarWidget />
+        </div>
+
+        <div className="dashboard-section">
+          <LocationWidget />
+        </div>
       </div>
 
       {/* Pendientes de revisión */}

@@ -5,6 +5,7 @@ import { progressService } from '../../services/progressService';
 import { evidenceService } from '../../services/evidenceService';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import CalendarWidget from '../../components/Calendar/CalendarWidget';
+import LocationWidget from '../../components/Location/LocationWidget';
 import './styles/dashboard.css';
 
 const ProfessorDashboard = () => {
@@ -110,9 +111,15 @@ const ProfessorDashboard = () => {
         </div>
       </div>
 
-      {/* Calendario */}
-      <div className="dashboard-section">
-        <CalendarWidget />
+      {/* Calendario y Ubicación en grid */}
+      <div className="dashboard-grid">
+        <div className="dashboard-section">
+          <CalendarWidget />
+        </div>
+
+        <div className="dashboard-section">
+          <LocationWidget />
+        </div>
       </div>
 
       {/* Acciones rápidas */}

@@ -1,0 +1,83 @@
+/* src/components/Location/LocationWidget.css */
+.location-widget {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.location-widget h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.location-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.location-info {
+  flex: 1;
+}
+
+.location-info strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #2c5530;
+}
+
+.location-info p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.location-coordinates {
+  margin-top: 10px;
+  font-size: 0.8em;
+  color: #888;
+}
+
+.location-coordinates span {
+  display: block;
+}
+
+.map-link {
+  background: #2c5530;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9em;
+  display: inline-block;
+  transition: background-color 0.3s;
+}
+
+.map-link:hover {
+  background: #1e3a22;
+}
+
+.location-loading, .location-error {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.location-error {
+  color: #d32f2f;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .location-content {
+    flex-direction: column;
+  }
+  
+  .map-link {
+    align-self: flex-start;
+  }
+}
