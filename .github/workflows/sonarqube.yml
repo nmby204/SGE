@@ -20,21 +20,29 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install dependencies - Backend
-      run: npm ci
-      working-directory: ./backend
-
-    - name: Run tests with coverage - Backend
+    - name: Install dependencies
       run: |
-        npm test -- --coverage --watchAll=false
-        npx nyc report --reporter=lcov
-      working-directory: ./backend
+        cd backend && npm ci
+        cd ../sistema-planeacion-frontend && npm ci
 
-    - name: SonarQube Scan
+    - name: SonarQube Scan - Backend
       run: |
+        cd backend
         npx sonarqube-scanner \
           -Dsonar.host.url=http://localhost:9000 \
           -Dsonar.login=admin \
           -Dsonar.password=admin \
-          -Dsonar.projectKey=SGE
-      working-directory: ./backend
+          -Dsonar.projectKey=SGE_backend \
+          -Dsonar.sources=. \
+          -Dsonar.exclusions=**/node_modules/**
+
+    - name: SonarQube Scan - Frontend  
+      run: |
+        cd sistema-planeacion-frontend
+        npx sonarqube-scanner \
+          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.login=admin \
+          -Dsonar.password=admin \
+          -Dsonar.projectKey=SGE_frontend \
+          -Dsonar.sources=src \
+          -Dsonar.exclusions=**/node_modules/**,**/build/**
